@@ -1,0 +1,21 @@
+data_ingestion:
+  bucket_file_names:
+  - anime.csv
+  - anime_with_synopsis.csv
+  - animelist.csv
+  - rating_complete.csv
+  - watching_status.csv
+  bucket_name: anime-recommender-project-53d8ce01-b0e0-4f8b-94c
+model:
+  batch_size: 4096
+  dropout_rate: 0.2
+  early_stopping_patience: 3
+  embedding_size: 128
+  epochs: 10
+  l2_reg: 1.0e-06
+  learning_rate: 0.001
+  loss: binary_crossentropy
+  metrics:
+  - mae
+  - mse
+  optimizer: Adam
