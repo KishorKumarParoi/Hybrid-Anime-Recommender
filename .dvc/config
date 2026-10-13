@@ -1,0 +1,4 @@
+[core]
+    remote = gcs-remote
+['remote "gcs-remote"']
+    url = gs://anime-recommender-dvc-project-53d8ce01-b0e0-4f8b-94c/dvc_store
