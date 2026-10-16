@@ -70,6 +70,7 @@ DEPLOY_K8S=false
 RUN_JENKINS=false
 RUN_TESTS=false
 PUSH_GCR=false
+SECURE_FIREWALL=false
 GCR_HOSTNAME="${GCR_HOSTNAME:-gcr.io}"
 SERVER_PUBLIC_IP="${SERVER_PUBLIC_IP:-136.71.59.13}"
 
@@ -94,6 +95,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --push-gcr|--gcr)
             PUSH_GCR=true
+            shift
+            ;;
+        --secure-firewall|--firewall)
+            SECURE_FIREWALL=true
             shift
             ;;
         --project|-p)
@@ -125,10 +130,11 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Execution Modes:"
             echo "  --start, -s                Launch the Flask web app locally"
-            echo "  --deploy-k8s, -k           Deploy complete Kubernetes stack (App, Redis, Prometheus, Grafana, ELK, ArgoCD)"
+            echo "  --deploy-k8s, -k           Deploy complete Kubernetes stack (App, Redis, Security, Prometheus, Grafana, ELK, ArgoCD)"
             echo "  --jenkins, -j              Start Jenkins container with Docker socket integration"
             echo "  --test, -t                 Execute pytest test suite with code coverage"
             echo "  --push-gcr, --gcr          Build and push container image to Google Container Registry (gcr.io)"
+            echo "  --secure-firewall          Apply zero-trust GCP VPC firewall rules and anti-bot shield"
             echo ""
             echo "Configuration Overrides:"
             echo "  --project, -p <PROJECT_ID> GCP Project ID (default: ${GCP_PROJECT})"
@@ -382,9 +388,22 @@ if [ "$PUSH_GCR" = true ]; then
     echo -e "    GCR URI (commit): $GIT_TAG"
 fi
 
+# Apply GCP Firewall Bot Shield if requested
+if [ "$SECURE_FIREWALL" = true ]; then
+    echo -e "\n${CYAN}[*] Applying Zero-Trust GCP VPC Firewall Rules & Bot Shield...${NC}"
+    if [ -x "${SCRIPT_DIR}/scripts/secure_firewall.sh" ]; then
+        "${SCRIPT_DIR}/scripts/secure_firewall.sh" --apply
+    else
+        bash "${SCRIPT_DIR}/scripts/secure_firewall.sh" --apply
+    fi
+fi
+
 # Deploy Kubernetes Stack if requested
 if [ "$DEPLOY_K8S" = true ]; then
     echo -e "\n${CYAN}[*] Deploying Enterprise Kubernetes Platform Stack...${NC}"
+    echo "[+] Deploying Zero-Trust NetworkPolicies & Security Hardening..."
+    kubectl apply -f manifests/security/ 2>/dev/null || true
+
     echo "[+] Deploying Redis Cache..."
     kubectl apply -f manifests/redis/ 2>/dev/null || true
 

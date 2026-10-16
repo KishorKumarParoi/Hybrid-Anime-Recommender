@@ -1,0 +1,125 @@
+# ==============================================================================
+# 🛡️ ZERO-TRUST KUBERNETES NETWORK POLICIES (EAST-WEST & NORTH-SOUTH SHIELD)
+# HYBRID ANIME RECOMMENDER & AI AGENT PLATFORM
+#
+# Eliminates bot lateral movement and unauthorized pod communication:
+# 1. Default-Deny-All ingress and egress baseline.
+# 2. Redis micro-segmentation: ONLY the anime recommender API can query Redis:6379.
+# 3. Prometheus telemetry isolation: Scrapes restricted to monitoring namespace.
+# 4. Strictly controlled external egress for CoreDNS and HTTPS APIs.
+# ==============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: default
+  labels:
+    security.policy: zero-trust-baseline
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# CoreDNS Egress Allowance (Required for cluster DNS resolution)
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-coredns-egress
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# Application Ingress & Egress Rules
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-traffic
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: hybrid-anime-recommender
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow HTTP traffic to API & Web UI on port 5000
+  - ports:
+    - protocol: TCP
+      port: 5000
+  # Allow Prometheus scraping from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+      podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 5000
+  egress:
+  # Allow egress ONLY to Redis Cache on port 6379
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow HTTPS egress for Groq LLM API and Comet ML tracking
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# Redis Micro-Segmentation (Strict Isolation)
+# Only hybrid-anime-recommender pods can communicate with Redis.
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-from-app-only
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: hybrid-anime-recommender
+    ports:
+    - protocol: TCP
+      port: 6379

@@ -221,9 +221,9 @@ while IFS= read -r line; do
     [ -n "$line" ] && IPS_TO_DELETE+=("$line")
 done < <(gcloud compute addresses list --project="$GCP_PROJECT" --format="value(name,region)" 2>/dev/null || true)
 
-echo -e "${CYAN}[8/10] Auditing custom DevOps firewall rules...${NC}"
+echo -e "${CYAN}[8/10] Auditing custom DevOps & Security firewall rules...${NC}"
 FWS_TO_DELETE=()
-for fw in "allow-devops-public-web" "allow-devops-admin-mgmt" "allow-devops-platform" "allow-anime-recommender"; do
+for fw in "allow-devops-admin-mgmt" "allow-admin-direct-ssh" "allow-iap-ssh-tunnel" "allow-public-web-shielded" "deny-all-bot-scanners" "allow-devops-public-web" "allow-devops-platform" "allow-anime-recommender"; do
     if gcloud compute firewall-rules describe "$fw" --project="$GCP_PROJECT" >/dev/null 2>&1; then
         FWS_TO_DELETE+=("$fw")
     fi

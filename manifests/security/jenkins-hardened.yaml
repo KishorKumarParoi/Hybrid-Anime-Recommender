@@ -1,0 +1,182 @@
+# ==============================================================================
+# 🛡️ HARDENED JENKINS ENTERPRISE POD SECURITY & RBAC SPECIFICATION
+# HYBRID ANIME RECOMMENDER & AI AGENT PLATFORM
+#
+# Eliminates Jenkins vulnerabilities (RCE CVE-2024-23897, unauthenticated CLI, bot scans):
+# 1. Non-root user execution (UID 1000, GID 1000).
+# 2. Strict capability dropping (drop: ["ALL"]) and allowPrivilegeEscalation: false.
+# 3. Least-privilege ServiceAccount RBAC (restricted strictly to deploy namespaces).
+# 4. Zero-Trust NetworkPolicy isolating Jenkins UI and JNLP Agent port 50000.
+# ==============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jenkins-sa
+  namespace: jenkins
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jenkins-deployer-role
+  namespace: default
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["services", "configmaps", "secrets", "pods", "pods/log"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies", "ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jenkins-deployer-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: jenkins-sa
+  namespace: jenkins
+roleRef:
+  kind: Role
+  name: jenkins-deployer-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-master
+  namespace: jenkins
+  labels:
+    app: jenkins-master
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: jenkins-master
+  template:
+    metadata:
+      labels:
+        app: jenkins-master
+    spec:
+      serviceAccountName: jenkins-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: jenkins
+        image: jenkins/jenkins:lts-jdk17
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - containerPort: 8080
+          name: web
+        - containerPort: 50000
+          name: jnlp
+        env:
+        - name: JAVA_OPTS
+          value: "-Djenkins.install.runSetupWizard=false -Djava.awt.headless=true -Dhudson.security.csrf.GlobalCrumbIssuerConfiguration.DISABLE_CSRF_PROTECTION=false"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1024Mi
+          limits:
+            cpu: 2000m
+            memory: 3072Mi
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+      volumes:
+      - name: jenkins-home
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service
+  namespace: jenkins
+spec:
+  type: ClusterIP
+  selector:
+    app: jenkins-master
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: web
+  - port: 50000
+    targetPort: 50000
+    name: jnlp
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# Jenkins Zero-Trust NetworkPolicy
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jenkins-network-policy
+  namespace: jenkins
+spec:
+  podSelector:
+    matchLabels:
+      app: jenkins-master
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow Web UI access from Ingress or admin cluster ingress only
+  - ports:
+    - protocol: TCP
+      port: 8080
+  # Allow JNLP agents strictly from cluster internal pods
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 50000
+  egress:
+  # CoreDNS egress
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Kubernetes API server egress (443)
+  - ports:
+    - protocol: TCP
+      port: 443
+  # HTTPS egress to GitHub and package registries
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443

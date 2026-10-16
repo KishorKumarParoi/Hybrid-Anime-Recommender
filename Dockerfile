@@ -33,6 +33,16 @@ COPY templates/ templates/
 COPY artifacts/ artifacts/
 COPY application.py ./
 
+# Security: Create unprivileged system user & group (UID 10001)
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10001 -g appgroup -d /app -s /sbin/nologin appuser && \
+    mkdir -p /app/logs /tmp && \
+    chown -R appuser:appgroup /app /tmp && \
+    chmod -R 755 /app
+
+# Switch to non-root user
+USER 10001:10001
+
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1

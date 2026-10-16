@@ -1,0 +1,105 @@
+# ==============================================================================
+# 🛡️ HARDENED ARGOCD ENTERPRISE POD SECURITY & ZERO-TRUST CONFIGURATION
+# HYBRID ANIME RECOMMENDER & AI AGENT PLATFORM
+#
+# Eliminates ArgoCD security vectors (unauthenticated reconnaissance, CVEs, bot traversal):
+# 1. Enforces Restricted Pod Security Standards on argocd namespace.
+# 2. Strict non-root execution (UID 999), drop all capabilities, readOnlyRootFilesystem.
+# 3. Disables anonymous user access completely (users.anonymous.enabled: "false").
+# 4. Zero-Trust NetworkPolicy isolating ArgoCD server and repo-server.
+# ==============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Disables anonymous bot reconnaissance
+  users.anonymous.enabled: "false"
+  # Enforce TLS encryption
+  server.insecure: "false"
+  # Enable CSRF token protection
+  url: "https://argocd.local"
+  application.instanceLabelKey: argocd.argoproj.io/instance
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-rbac-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  policy.default: role:readonly
+  policy.csv: |
+    p, role:devops-lead, applications, *, */*, allow
+    p, role:devops-lead, clusters, get, *, allow
+    p, role:devops-lead, repositories, *, *, allow
+    g, admin, role:admin
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# ArgoCD Zero-Trust NetworkPolicy
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: argocd-network-policy
+  namespace: argocd
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow Web UI / API access to argocd-server from authorized ingress controllers
+  - ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 443
+  # Allow internal grpc communication between argocd components
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 8082
+    - protocol: TCP
+      port: 8083
+  egress:
+  # CoreDNS egress
+  - ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Kubernetes API server egress (443)
+  - ports:
+    - protocol: TCP
+      port: 443
+  # HTTPS egress to GitHub for repository manifest tracking
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443

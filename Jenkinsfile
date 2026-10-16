@@ -367,6 +367,9 @@ pipeline {
                     kubectl create namespace logging --dry-run=client -o yaml | kubectl apply -f -
                     kubectl apply -f manifests/logging/ 2>/dev/null || true
 
+                    echo "[*] Applying Zero-Trust NetworkPolicies & Pod Security Hardening..."
+                    kubectl apply -f manifests/security/ 2>/dev/null || true
+
                     echo "[*] Pointing application deployment to GCR image (${GCR_IMAGE_NAME}:${BUILD_TAG})..."
                     sed -i.bak "s|image: .*hybrid-anime-recommender.*|image: ${GCR_IMAGE_NAME}:${BUILD_TAG}|g" manifests/deployment.yaml 2>/dev/null || true
                     kubectl apply -f manifests/deployment.yaml -f manifests/service.yaml
