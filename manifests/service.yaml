@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hybrid-anime-recommender-service
+  labels:
+    app: hybrid-anime-recommender
+spec:
+  type: LoadBalancer
+  selector:
+    app: hybrid-anime-recommender
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 5000
+    nodePort: 30080
