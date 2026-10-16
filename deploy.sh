@@ -71,6 +71,12 @@ RUN_JENKINS=false
 RUN_TESTS=false
 PUSH_GCR=false
 SECURE_FIREWALL=false
+CREATE_VM=false
+VM_NAME=""
+VM_MACHINE_TYPE=""
+VM_DISK_SIZE=""
+VM_ZONE=""
+VM_SPOT=false
 GCR_HOSTNAME="${GCR_HOSTNAME:-gcr.io}"
 SERVER_PUBLIC_IP="${SERVER_PUBLIC_IP:-136.71.59.13}"
 
@@ -79,6 +85,26 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --start|-s)
             START_APP=true
+            shift
+            ;;
+        --create-vm|--vm)
+            CREATE_VM=true
+            shift
+            ;;
+        --vm-name)
+            VM_NAME="$2"
+            shift 2
+            ;;
+        --machine-type|-m)
+            VM_MACHINE_TYPE="$2"
+            shift 2
+            ;;
+        --vm-disk)
+            VM_DISK_SIZE="$2"
+            shift 2
+            ;;
+        --spot|--preemptible)
+            VM_SPOT=true
             shift
             ;;
         --deploy-k8s|-k|--k8s)
@@ -117,6 +143,11 @@ while [[ $# -gt 0 ]]; do
             GCP_REGION="$2"
             shift 2
             ;;
+        --zone|-z)
+            GCP_ZONE="$2"
+            VM_ZONE="$2"
+            shift 2
+            ;;
         --sa-name)
             SA_NAME="$2"
             shift 2
@@ -130,17 +161,25 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Execution Modes:"
             echo "  --start, -s                Launch the Flask web app locally"
+            echo "  --create-vm, --vm          Provision Compute Engine VM, clone repo, and start platform"
             echo "  --deploy-k8s, -k           Deploy complete Kubernetes stack (App, Redis, Security, Prometheus, Grafana, ELK, ArgoCD)"
             echo "  --jenkins, -j              Start Jenkins container with Docker socket integration"
             echo "  --test, -t                 Execute pytest test suite with code coverage"
             echo "  --push-gcr, --gcr          Build and push container image to Google Container Registry (gcr.io)"
             echo "  --secure-firewall          Apply zero-trust GCP VPC firewall rules and anti-bot shield"
             echo ""
+            echo "VM Customization Options:"
+            echo "  --vm-name <NAME>           Compute Engine VM instance name (default: hybrid-anime-recommender-vm)"
+            echo "  --machine-type, -m <TYPE>  GCP Machine type (default: e2-standard-4, e2-standard-2, e2-medium)"
+            echo "  --vm-disk <GB>             Boot disk size in GB (default: 50)"
+            echo "  --spot                     Provision as Spot VM (60-80% cost reduction)"
+            echo ""
             echo "Configuration Overrides:"
             echo "  --project, -p <PROJECT_ID> GCP Project ID (default: ${GCP_PROJECT})"
             echo "  --bucket, -b <BUCKET_NAME> GCS Raw Data Bucket Name (default: ${BUCKET_NAME})"
             echo "  --dvc-bucket <NAME>        GCS DVC Bucket Name (default: ${DVC_BUCKET_NAME})"
             echo "  --region, -r <REGION>      GCP Region (default: ${GCP_REGION})"
+            echo "  --zone, -z <ZONE>          GCP Zone (default: ${GCP_ZONE:-us-central1-a})"
             echo "  --sa-name <NAME>           Service Account name (default: ${SA_NAME})"
             echo "  --key-file <PATH>          Service Account JSON key path (default: ${KEY_FILE})"
             echo "  --help, -h                 Show this help message"
@@ -386,6 +425,30 @@ if [ "$PUSH_GCR" = true ]; then
     echo -e "${GREEN}[✓] Docker image successfully pushed to Google Container Registry!${NC}"
     echo -e "    GCR URI (latest): $GCR_TAG"
     echo -e "    GCR URI (commit): $GIT_TAG"
+fi
+
+# Provision Compute Engine VM & Clone Repository if requested
+if [ "$CREATE_VM" = true ]; then
+    echo -e "\n${CYAN}[*] Provisioning Compute Engine VM & Bootstrapping Repository...${NC}"
+    VM_ARGS=()
+    [ -n "$VM_NAME" ] && VM_ARGS+=(--name "$VM_NAME")
+    [ -n "$VM_MACHINE_TYPE" ] && VM_ARGS+=(--machine-type "$VM_MACHINE_TYPE")
+    [ -n "$VM_DISK_SIZE" ] && VM_ARGS+=(--disk-size "$VM_DISK_SIZE")
+    [ -n "$VM_ZONE" ] && VM_ARGS+=(--zone "$VM_ZONE")
+    [ "$VM_SPOT" = true ] && VM_ARGS+=(--spot)
+
+    if [ -x "${SCRIPT_DIR}/scripts/create_vm.sh" ]; then
+        "${SCRIPT_DIR}/scripts/create_vm.sh" "${VM_ARGS[@]}"
+    else
+        bash "${SCRIPT_DIR}/scripts/create_vm.sh" "${VM_ARGS[@]}"
+    fi
+
+    # Reload environment to pick up newly assigned SERVER_PUBLIC_IP
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
+        set -a
+        source "${SCRIPT_DIR}/.env" 2>/dev/null || true
+        set +a
+    fi
 fi
 
 # Apply GCP Firewall Bot Shield if requested

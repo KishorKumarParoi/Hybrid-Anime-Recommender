@@ -272,8 +272,8 @@ else
 fi
 
 # Rule D: Shielded Public Web Ingress (Application API & Frontend)
-# Only ports 80, 443, and NodePort 30080 (or 5000) are permitted to receive web traffic
-echo "[+] Creating 'allow-public-web-shielded' (Ports 80, 443, 30080)..."
+# Ports 80, 443, 5000, and NodePort 30080 are permitted to receive web traffic
+echo "[+] Creating or updating 'allow-public-web-shielded' (Ports 80, 443, 5000, 30080)..."
 if ! gcloud compute firewall-rules describe allow-public-web-shielded --project="$GCP_PROJECT" >/dev/null 2>&1; then
     gcloud compute firewall-rules create allow-public-web-shielded \
         --project="$GCP_PROJECT" \
@@ -281,13 +281,17 @@ if ! gcloud compute firewall-rules describe allow-public-web-shielded --project=
         --priority=1050 \
         --direction=INGRESS \
         --action=ALLOW \
-        --rules=tcp:80,tcp:443,tcp:30080 \
+        --rules=tcp:80,tcp:443,tcp:5000,tcp:30080 \
         --source-ranges="0.0.0.0/0" \
         --enable-logging \
         --description="Public web traffic to application frontend and REST API with access logging enabled for bot/anomaly detection."
     echo -e "${GREEN}[✓] allow-public-web-shielded created with connection logging.${NC}"
 else
-    echo -e "${YELLOW}[*] allow-public-web-shielded already exists.${NC}"
+    gcloud compute firewall-rules update allow-public-web-shielded \
+        --project="$GCP_PROJECT" \
+        --rules=tcp:80,tcp:443,tcp:5000,tcp:30080 \
+        --quiet 2>/dev/null || true
+    echo -e "${GREEN}[✓] allow-public-web-shielded updated to include port 5000.${NC}"
 fi
 
 # Rule E: Default Deny All Remaining Ingress
