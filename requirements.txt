@@ -18,3 +18,4 @@ langchain
 langchain-groq
 langchain-community
 langchain-chroma
+kfp>=2.17.0
