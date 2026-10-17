@@ -1,0 +1,16 @@
+apiVersion: v2
+name: hybrid-anime-recommender
+description: Production Helm Chart for Hybrid Anime Recommender System & AI Agent Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - machine-learning
+  - recommendation-system
+  - anime
+  - ai-agent
+  - collaborative-filtering
+home: https://github.com/KishorKumarParoi/Hybrid-Anime-Recommender
+maintainers:
+  - name: Kishor Kumar Paroi
+    email: contact@example.com
