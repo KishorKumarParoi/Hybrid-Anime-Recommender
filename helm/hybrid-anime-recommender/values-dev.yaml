@@ -1,0 +1,34 @@
+# Development / Local KinD / Minikube configuration
+replicaCount: 1
+
+image:
+  repository: kishorkumarparoi/hybrid-anime-recommender
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1024Mi
+
+autoscaling:
+  enabled: false
+
+redis:
+  enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

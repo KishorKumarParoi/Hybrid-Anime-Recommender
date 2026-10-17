@@ -1,0 +1,79 @@
+{{- if .Values.redis.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hybrid-anime-recommender.fullname" . }}-redis
+  labels:
+    {{- include "hybrid-anime-recommender.labels" . | nindent 4 }}
+    app: redis
+    tier: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      tier: cache
+  template:
+    metadata:
+      labels:
+        app: redis
+        tier: cache
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          command:
+            - "redis-server"
+            - "--appendonly"
+            - "yes"
+            - "--maxmemory"
+            - "{{ .Values.redis.maxmemory | default "256mb" }}"
+            - "--maxmemory-policy"
+            - "{{ .Values.redis.maxmemoryPolicy | default "allkeys-lru" }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 999
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: redis
+              containerPort: 6379
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hybrid-anime-recommender.fullname" . }}-redis
+  labels:
+    {{- include "hybrid-anime-recommender.labels" . | nindent 4 }}
+    app: redis
+    tier: cache
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+    tier: cache
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+{{- end }}
