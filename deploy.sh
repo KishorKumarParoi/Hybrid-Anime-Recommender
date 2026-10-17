@@ -474,8 +474,16 @@ if [ "$DEPLOY_K8S" = true ]; then
     kubectl create namespace logging --dry-run=client -o yaml | kubectl apply -f -
     kubectl apply -f manifests/logging/ 2>/dev/null || true
 
-    echo "[+] Deploying Application Deployment and Service..."
-    kubectl apply -f manifests/deployment.yaml -f manifests/service.yaml
+    echo "[+] Deploying Application via Helm (or manifests fallback)..."
+    if command -v helm &>/dev/null && [ -d "helm/hybrid-anime-recommender" ]; then
+        echo "[✓] Deploying via Helm chart (helm/hybrid-anime-recommender)..."
+        helm upgrade --install hybrid-anime-recommender helm/hybrid-anime-recommender \
+            -f helm/hybrid-anime-recommender/values.yaml \
+            --namespace default || kubectl apply -f manifests/deployment.yaml -f manifests/service.yaml
+    else
+        echo "[+] Deploying Application Deployment and Service via kubectl..."
+        kubectl apply -f manifests/deployment.yaml -f manifests/service.yaml
+    fi
 
     echo "[+] Deploying Prometheus & Grafana monitoring stack..."
     kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -

@@ -370,9 +370,15 @@ pipeline {
                     echo "[*] Applying Zero-Trust NetworkPolicies & Pod Security Hardening..."
                     kubectl apply -f manifests/security/ 2>/dev/null || true
 
-                    echo "[*] Pointing application deployment to GCR image (${GCR_IMAGE_NAME}:${BUILD_TAG})..."
-                    sed -i.bak "s|image: .*hybrid-anime-recommender.*|image: ${GCR_IMAGE_NAME}:${BUILD_TAG}|g" manifests/deployment.yaml 2>/dev/null || true
-                    kubectl apply -f manifests/deployment.yaml -f manifests/service.yaml
+                    echo "[*] Deploying application (${GCR_IMAGE_NAME}:${BUILD_TAG}) via Helm or kubectl..."
+                    if (sh(script: "command -v helm && [ -d 'helm/hybrid-anime-recommender' ]", returnStatus: true) == 0) {
+                        sh "helm upgrade --install ${APP_NAME} helm/hybrid-anime-recommender --set image.repository=${GCR_IMAGE_NAME} --set image.tag=${BUILD_TAG} --namespace default"
+                    } else {
+                        sh """
+                            sed -i.bak "s|image: .*hybrid-anime-recommender.*|image: ${GCR_IMAGE_NAME}:${BUILD_TAG}|g" manifests/deployment.yaml 2>/dev/null || true
+                            kubectl apply -f manifests/deployment.yaml -f manifests/service.yaml
+                        """
+                    }
 
                     echo "[*] Applying Prometheus & Grafana monitoring manifests..."
                     kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
