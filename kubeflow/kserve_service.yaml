@@ -1,0 +1,47 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: anime-recommender-service
+  namespace: default
+  annotations:
+    sidecar.istio.io/inject: "true"
+spec:
+  predictor:
+    serviceAccountName: kserve-sa
+    minReplicas: 1
+    maxReplicas: 5
+    scaleTarget: 80
+    scaleMetric: concurrency
+    containers:
+    - name: kserve-container
+      image: gcr.io/mlops-new-447207/ml-project:latest
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: PORT
+        value: "8080"
+      - name: REDIS_HOST
+        value: "redis-service"
+      - name: REDIS_PORT
+        value: "6379"
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "2000m"
+          memory: "4Gi"
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      readinessProbe:
+        httpGet:
+          path: /health
+          port: 8080
+        initialDelaySeconds: 15
+        periodSeconds: 10
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8080
+        initialDelaySeconds: 30
+        periodSeconds: 15
