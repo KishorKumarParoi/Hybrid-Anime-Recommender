@@ -1,0 +1,24 @@
+aws_region       = "us-east-1"
+project          = "hybrid-anime-recommender"
+app_image        = "kishorkumarparoi/hybrid-anime-recommender:latest"
+pyrit_image      = "kishorkumarparoi/pyrit-dashboard:latest"
+tensorzero_image = "tensorzero/gateway:latest"
+
+# Sensitive Credentials
+api_key           = "your-custom-client-api-key"
+groq_api_key      = "gsk_your_groq_api_key_here"
+openai_api_key    = ""
+langsmith_api_key = ""
+
+# Resource Sizing
+app_desired_count = 1
+app_min_capacity  = 1
+app_max_capacity  = 5
+app_cpu           = "2048"
+app_memory        = "4096"
+db_instance_class = "db.t3.micro"
+db_multi_az       = false
+redis_node_type   = "cache.t3.micro"
+
+# Optional ACM certificate for HTTPS
+acm_certificate_arn = ""

@@ -1,0 +1,13 @@
+# ==============================================================================
+# AZURE EVENT HUBS & AI SECURITY - TFVARS TEMPLATE
+# ==============================================================================
+
+project_name           = "hybrid-anime"
+environment            = "prod"
+azure_region           = "eastus"
+eventhub_sku           = "Standard"  # Standard enables Kafka 1.0+ surface on port 9093
+eventhub_capacity      = 1
+auto_inflate_enabled   = true
+max_throughput_units   = 5
+message_retention_days = 7
+partition_count        = 4

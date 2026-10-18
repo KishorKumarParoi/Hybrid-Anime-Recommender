@@ -42,9 +42,18 @@ class AIAgentRecommendationPipeline:
             api_key=self.api_key,
             model_name=self.model_name
         )
+        from src.ai_agent.research_agent import AutonomousAnimeResearchAgent
+        self.research_agent = AutonomousAnimeResearchAgent(
+            retriever=self.retriever,
+            api_key=self.api_key,
+            model_name=self.model_name
+        )
 
     def recommend(self, query: str, user_api_key: str = None) -> str:
         return self.agent.get_recommendation(query, user_api_key=user_api_key)
+
+    def research(self, topic_query: str, user_api_key: str = None) -> dict:
+        return self.research_agent.research(topic_query, user_api_key=user_api_key)
 
 _cached_agent_pipeline = None
 
@@ -53,6 +62,12 @@ def get_agent_recommendation(query: str, api_key: str = None) -> str:
     if _cached_agent_pipeline is None:
         _cached_agent_pipeline = AIAgentRecommendationPipeline()
     return _cached_agent_pipeline.recommend(query, user_api_key=api_key)
+
+def get_research_dossier(query: str, api_key: str = None) -> dict:
+    global _cached_agent_pipeline
+    if _cached_agent_pipeline is None:
+        _cached_agent_pipeline = AIAgentRecommendationPipeline()
+    return _cached_agent_pipeline.research(query, user_api_key=api_key)
 
 if __name__ == "__main__":
     sample_query = "cyberpunk anime with dark themes and great action"

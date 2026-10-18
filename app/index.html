@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research Agent</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; padding: 24px; }
+    h1 { color: #58a6ff; font-size: 1.8rem; margin-bottom: 8px; }
+    .subtitle { color: #8b949e; margin-bottom: 32px; font-size: 0.9rem; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+    label { display: block; color: #8b949e; font-size: 0.85rem; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 10px 14px; border-radius: 6px; font-size: 0.95rem; outline: none; }
+    input:focus, select:focus { border-color: #58a6ff; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .btn { background: #238636; color: #fff; border: none; padding: 11px 24px; border-radius: 6px; font-size: 0.95rem; cursor: pointer; font-weight: 600; }
+    .btn:hover { background: #2ea043; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: #21262d; border: 1px solid #30363d; }
+    .btn-secondary:hover { background: #30363d; }
+    .status { padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; display: inline-block; }
+    .status-pending { background: #2d333b; color: #8b949e; }
+    .status-done { background: #1f3d2b; color: #3fb950; }
+    .status-error { background: #3d1f1f; color: #f85149; }
+    .status-blocked { background: #3d2d1f; color: #d29922; }
+    #report-box { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 16px; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+    #diff-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 14px; font-size: 0.85rem; white-space: pre-wrap; color: #8b949e; }
+    .diff-new { color: #3fb950; }
+    .diff-removed { color: #f85149; }
+    #session-box { font-size: 0.85rem; }
+    .msg { padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; max-width: 80%; }
+    .msg-user { background: #1c2128; margin-left: auto; }
+    .msg-assistant { background: #161b22; }
+    .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    #spinner { display: none; width: 16px; height: 16px; border: 2px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-left: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .section-title { color: #58a6ff; font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Autonomous Research Agent</h1>
+  <p class="subtitle">Powered by LangGraph · TensorZero · AWS Bedrock Guardrails</p>
+
+  <div class="card">
+    <div class="section-title">Authentication</div>
+    <div style="display:flex;gap:10px;align-items:flex-end">
+      <div style="flex:1">
+        <label>API Key</label>
+        <input type="password" id="api-key" placeholder="Enter your X-API-Key (saved in browser)">
+      </div>
+      <button class="btn btn-secondary" onclick="saveApiKey()" style="white-space:nowrap">Save Key</button>
+    </div>
+    <div id="key-status" style="font-size:0.8rem;color:#8b949e;margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">New Research Job</div>
+    <div style="margin-bottom:16px">
+      <label>Research Topic</label>
+      <input type="text" id="topic" placeholder="e.g. Quantum computing advances in 2024">
+    </div>
+    <div class="row">
+      <div>
+        <label>Output Format</label>
+        <select id="format">
+          <option value="text">Plain Text</option>
+          <option value="pdf">PDF Export</option>
+          <option value="json">Structured JSON</option>
+        </select>
+      </div>
+      <div>
+        <label>Session ID (optional)</label>
+        <input type="text" id="session-id" placeholder="Leave blank to auto-generate">
+      </div>
+    </div>
+    <button class="btn" onclick="submitResearch()" id="submit-btn">
+      Start Research
+      <span id="spinner"></span>
+    </button>
+  </div>
+
+  <div class="card" id="result-card" style="display:none">
+    <div class="section-title">Result</div>
+    <div style="margin-bottom:12px">
+      <span id="job-status" class="status status-pending">Pending</span>
+      <span style="color:#8b949e;font-size:0.8rem;margin-left:10px" id="job-id-label"></span>
+    </div>
+    <div id="report-box" style="display:none"></div>
+    <div class="actions" id="export-actions" style="display:none">
+      <button class="btn btn-secondary" onclick="downloadPDF()">Download PDF</button>
+      <button class="btn btn-secondary" onclick="copyJSON()">Copy JSON</button>
+      <button class="btn btn-secondary" onclick="loadDiff()">Show Changes vs Previous</button>
+    </div>
+    <div id="diff-box" style="display:none;margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Session History
+      <button class="btn btn-secondary" style="float:right;font-size:0.8rem;padding:4px 12px" onclick="newSession()">New Session</button>
+    </div>
+    <p style="color:#8b949e;font-size:0.8rem;margin-bottom:12px">Session ID is auto-reused across requests so history builds up. Click "New Session" to start fresh.</p>
+    <div id="session-box"><p style="color:#8b949e;font-size:0.85rem">No session active.</p></div>
+  </div>
+
+  <script>
+    const API = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+    let currentJobId = null;
+    let currentSessionId = null;
+    let pollInterval = null;
+    let lastReport = null;
+    let lastTopic = null;
+
+    function getApiKey() {
+      return localStorage.getItem('research_agent_api_key') || '';
+    }
+
+    function authHeaders() {
+      const key = getApiKey();
+      return key ? { 'Content-Type': 'application/json', 'X-API-Key': key }
+                 : { 'Content-Type': 'application/json' };
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('api-key').value.trim();
+      if (key) {
+        localStorage.setItem('research_agent_api_key', key);
+        document.getElementById('key-status').textContent = 'API key saved.';
+        document.getElementById('key-status').style.color = '#3fb950';
+      } else {
+        localStorage.removeItem('research_agent_api_key');
+        document.getElementById('key-status').textContent = 'API key cleared.';
+        document.getElementById('key-status').style.color = '#8b949e';
+      }
+    }
+
+    // Restore key indicator on load
+    window.addEventListener('DOMContentLoaded', () => {
+      if (getApiKey()) {
+        document.getElementById('key-status').textContent = 'API key loaded from browser storage.';
+        document.getElementById('key-status').style.color = '#3fb950';
+      }
+    });
+
+    async function submitResearch() {
+      const topic = document.getElementById('topic').value.trim();
+      if (!topic) return alert('Please enter a research topic.');
+      const format = document.getElementById('format').value;
+      const sessionId = document.getElementById('session-id').value.trim();
+
+      document.getElementById('submit-btn').disabled = true;
+      document.getElementById('spinner').style.display = 'inline-block';
+      document.getElementById('result-card').style.display = 'block';
+      document.getElementById('job-status').className = 'status status-pending';
+      document.getElementById('job-status').textContent = 'Submitting...';
+      document.getElementById('report-box').style.display = 'none';
+      document.getElementById('export-actions').style.display = 'none';
+      document.getElementById('diff-box').style.display = 'none';
+
+      try {
+        const resp = await fetch(`${API}/research`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ topic, output_format: format, session_id: sessionId }),
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || 'Request failed');
+        }
+        const data = await resp.json();
+        currentJobId = data.job_id;
+        currentSessionId = data.session_id;
+        lastTopic = topic;
+        document.getElementById('session-id').value = currentSessionId;
+        document.getElementById('job-id-label').textContent = `Job: ${currentJobId}`;
+        document.getElementById('job-status').className = 'status status-pending';
+        document.getElementById('job-status').textContent = 'Processing...';
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(pollResult, 3000);
+      } catch (e) {
+        document.getElementById('job-status').className = 'status status-error';
+        document.getElementById('job-status').textContent = `Error: ${e.message}`;
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('spinner').style.display = 'none';
+      }
+    }
+
+    async function pollResult() {
+      if (!currentJobId) return;
+      try {
+        const resp = await fetch(`${API}/result/${currentJobId}`, { headers: authHeaders() });
+        const data = await resp.json();
+        if (data.status === 'pending') return;
+        clearInterval(pollInterval);
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('spinner').style.display = 'none';
+
+        if (data.status === 'done') {
+          lastReport = data;
+          document.getElementById('job-status').className = 'status status-done';
+          document.getElementById('job-status').textContent = 'Complete';
+          document.getElementById('report-box').textContent = data.report;
+          document.getElementById('report-box').style.display = 'block';
+          document.getElementById('export-actions').style.display = 'flex';
+          loadSession();
+        } else if (data.status === 'blocked') {
+          document.getElementById('job-status').className = 'status status-blocked';
+          document.getElementById('job-status').textContent = `Blocked: ${data.error}`;
+        } else {
+          document.getElementById('job-status').className = 'status status-error';
+          document.getElementById('job-status').textContent = `Error: ${data.error}`;
+        }
+      } catch (e) {
+        console.error('Poll error', e);
+      }
+    }
+
+    async function downloadPDF() {
+      if (!currentJobId) return;
+      const a = document.createElement('a');
+      a.href = `${API}/result/${currentJobId}/pdf`;
+      a.download = `report-${currentJobId}.pdf`;
+      a.click();
+    }
+
+    function copyJSON() {
+      if (!lastReport || !lastTopic) return;
+      const json = JSON.stringify({
+        report_id: currentJobId,
+        topic: lastTopic,
+        report: lastReport.report,
+        structured: lastReport.structured || null,
+      }, null, 2);
+      navigator.clipboard.writeText(json).then(() => alert('JSON copied to clipboard.'));
+    }
+
+    async function loadDiff() {
+      if (!lastTopic) return;
+      const resp = await fetch(`${API}/diff/${encodeURIComponent(lastTopic)}`, { headers: authHeaders() });
+      const data = await resp.json();
+      const box = document.getElementById('diff-box');
+      box.style.display = 'block';
+      const diff = data.diff || 'No previous report found.';
+      box.innerHTML = diff.split('\n').map(line => {
+        const esc = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        if (line.startsWith('+++') || line.startsWith('---')) return `<span style="color:#58a6ff;font-weight:600">${esc}</span>`;
+        if (line.startsWith('@@')) return `<span style="color:#d29922">${esc}</span>`;
+        if (line.startsWith('+')) return `<span class="diff-new">${esc}</span>`;
+        if (line.startsWith('-')) return `<span class="diff-removed">${esc}</span>`;
+        return `<span>${esc}</span>`;
+      }).join('\n');
+    }
+
+    async function loadSession() {
+      if (!currentSessionId) return;
+      const resp = await fetch(`${API}/session/${currentSessionId}`, { headers: authHeaders() });
+      const data = await resp.json();
+      const box = document.getElementById('session-box');
+      if (!data.messages || data.messages.length === 0) {
+        box.innerHTML = '<p style="color:#8b949e;font-size:0.85rem">No messages yet.</p>';
+        return;
+      }
+      box.innerHTML = data.messages.map(m =>
+        `<div class="msg msg-${m.role}"><strong style="text-transform:capitalize">${m.role}</strong>: ${m.content}</div>`
+      ).join('');
+    }
+
+    function newSession() {
+      currentSessionId = null;
+      document.getElementById('session-id').value = '';
+      document.getElementById('session-box').innerHTML = '<p style="color:#8b949e;font-size:0.85rem">No session active.</p>';
+    }
+  </script>
+</body>
+</html>

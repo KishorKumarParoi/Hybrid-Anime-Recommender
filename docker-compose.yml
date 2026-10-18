@@ -1,0 +1,169 @@
+version: "3.9"
+
+services:
+  # ─── 1. Next.js Latest (v16 Turbopack) Frontend ────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hybrid-anime-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    depends_on:
+      - go-auth
+      - express-interactions
+      - rust-scoring
+      - app
+    networks:
+      - microservices-net
+
+  # ─── 2. Go Authentication Microservice (JWT + RBAC + DB) ───────────────────
+  go-auth:
+    build:
+      context: ./services/go-auth-service
+      dockerfile: Dockerfile
+    container_name: hybrid-anime-go-auth
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - JWT_SECRET=hybrid-anime-polyglot-secure-jwt-secret-key-2026
+      - DATABASE_URL=postgres://anime_user:anime_password@postgres:5432/anime_recommender?sslmode=disable
+      - MONGODB_URI=mongodb://mongo_user:mongo_password@mongo:27017/anime_interactions?authSource=admin
+    depends_on:
+      - postgres
+      - mongo
+    networks:
+      - microservices-net
+
+  # ─── 3. Express Interactions Microservice (Reviews, Ratings, Bookmarks) ────
+  express-interactions:
+    build:
+      context: ./services/express-interaction-service
+      dockerfile: Dockerfile
+    container_name: hybrid-anime-express-interactions
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - MONGODB_URI=mongodb://mongo_user:mongo_password@mongo:27017/anime_interactions?authSource=admin
+      - POSTGRES_URL=postgres://anime_user:anime_password@postgres:5432/anime_recommender?sslmode=disable
+    depends_on:
+      - mongo
+      - postgres
+    networks:
+      - microservices-net
+
+  # ─── 4. Rust Sub-Millisecond Vector Scoring Engine (SIMD Cosine) ───────────
+  rust-scoring:
+    build:
+      context: ./services/rust-scoring-engine
+      dockerfile: Dockerfile
+    container_name: hybrid-anime-rust-scoring
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - PORT=8083
+      - RUST_LOG=info
+    networks:
+      - microservices-net
+
+  # ─── 5. Python FastAPI Intelligence Engine (LangGraph + Hybrid Recs) ────────
+  app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: hybrid-anime-fastapi
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_URL=postgresql://anime_user:anime_password@postgres:5432/anime_recommender
+      - MONGO_URL=mongodb://mongo_user:mongo_password@mongo:27017/anime_interactions?authSource=admin
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+    networks:
+      - microservices-net
+
+  # ─── 6. PostgreSQL Relational Database ──────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hybrid-anime-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=anime_user
+      - POSTGRES_PASSWORD=anime_password
+      - POSTGRES_DB=anime_recommender
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - microservices-net
+
+  # ─── 7. MongoDB Document Database ──────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    container_name: hybrid-anime-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo_user
+      - MONGO_INITDB_ROOT_PASSWORD=mongo_password
+      - MONGO_INITDB_DATABASE=anime_interactions
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - microservices-net
+
+  # ─── 8. Redis Fast In-Memory Cache ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: hybrid-anime-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - microservices-net
+
+  # ─── 9. Nginx Reverse Proxy Gateway & Load Balancer ─────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: hybrid-anime-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - go-auth
+      - express-interactions
+      - rust-scoring
+      - app
+    networks:
+      - microservices-net
+
+networks:
+  microservices-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:

@@ -17,6 +17,14 @@ class AnimeAgentRecommender:
         self.prompt = get_anime_prompt()
 
     def get_recommendation(self, query: str, user_api_key: str = None) -> str:
+        from src.ai_agent.guardrails import validate_input, validate_output
+        from src.ai_agent.retry import with_retry
+
+        # Ingress Safety Guardrail
+        is_safe, error_msg, _ = validate_input(query)
+        if not is_safe:
+            return f"⚠️ {error_msg}"
+
         active_key = user_api_key.strip() if user_api_key else self.api_key
 
         if active_key:
@@ -24,7 +32,7 @@ class AnimeAgentRecommender:
                 from langchain_groq import ChatGroq
 
                 logger.info(
-                    f"Invoking Groq LLM ({self.model_name}) for query: '{query}'"
+                    f"Invoking Groq LLM ({self.model_name}) with resilience for query: '{query}'"
                 )
                 llm = ChatGroq(
                     api_key=active_key, model=self.model_name, temperature=0.2
@@ -36,7 +44,14 @@ class AnimeAgentRecommender:
                     | llm
                     | StrOutputParser()
                 )
-                return rag_chain.invoke(query)
+                raw_response = with_retry(lambda: rag_chain.invoke(query), max_retries=3, delay=1.0)
+                
+                # Egress Output Guardrail
+                is_out_safe, out_err = validate_output(raw_response)
+                if not is_out_safe:
+                    return f"⚠️ {out_err}"
+
+                return raw_response
             except Exception as e:
                 logger.warning(
                     f"Groq LLM call failed ({e}). Falling back to semantic vector response."

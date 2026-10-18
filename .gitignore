@@ -23,3 +23,30 @@ artifacts/
 .coverage
 coverage.xml
 190 - *
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.tfvars
+!*.tfvars.example
+resume/
+
+# Node & Next.js
+node_modules/
+.next/
+*.log
+
+# Rust
+target/
+Cargo.lock
+
+# Go
+services/go-auth-service/go-auth-service

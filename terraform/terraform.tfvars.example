@@ -1,0 +1,11 @@
+gcp_project_id         = "project-53d8ce01-b0e0-4f8b-94c"
+gcp_region             = "us-central1"
+gcp_zone               = "us-central1-a"
+environment            = "prod"
+cluster_name           = "hybrid-anime-cluster"
+network_name           = "anime-rec-vpc"
+subnet_name            = "anime-rec-subnet"
+enable_autopilot       = true
+deploy_helm            = true
+image_tag              = "latest"
+artifact_registry_name = "anime-recommender-repo"

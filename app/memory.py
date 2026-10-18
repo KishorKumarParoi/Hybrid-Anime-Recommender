@@ -1,0 +1,190 @@
+import difflib
+import json
+import asyncio
+import logging
+from datetime import datetime, timezone
+import redis.asyncio as aioredis
+from sentence_transformers import SentenceTransformer
+from app.config import Config
+from app.pool import get_pool
+
+logger = logging.getLogger(__name__)
+
+_model = None
+
+
+def _get_model() -> SentenceTransformer:
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
+
+
+# In-memory fallback for LTM when PostgreSQL is offline
+_in_memory_reports: list[dict] = []
+
+
+async def session_add(redis: aioredis.Redis, config: Config, session_id: str, role: str, content: str) -> None:
+    if not redis:
+        return
+    try:
+        key = f"session:{session_id}"
+        await redis.rpush(key, json.dumps({"role": role, "content": content}))
+        await redis.ltrim(key, -config.session_max_messages, -1)
+        await redis.expire(key, config.session_ttl)
+    except Exception as e:
+        logger.debug(f"session_add error: {e}")
+
+
+async def session_get(redis: aioredis.Redis, session_id: str) -> list[dict]:
+    if not redis:
+        return []
+    try:
+        messages = await redis.lrange(f"session:{session_id}", 0, -1)
+        return [json.loads(m) for m in messages]
+    except Exception as e:
+        logger.debug(f"session_get error: {e}")
+        return []
+
+
+async def db_migrate(config: Config) -> None:
+    pool = get_pool()
+    if not pool:
+        logger.debug("Database pool not active; skipping PostgreSQL schema migration.")
+        return
+
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS reports (
+                    id         TEXT PRIMARY KEY,
+                    topic      TEXT NOT NULL,
+                    report     TEXT NOT NULL,
+                    embedding  vector(384),
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+            """)
+            try:
+                await conn.execute(f"""
+                    CREATE INDEX IF NOT EXISTS reports_embedding_idx
+                    ON reports USING ivfflat (embedding vector_cosine_ops)
+                    WITH (lists = {config.ivfflat_lists})
+                """)
+            except Exception:
+                pass  # Requires sufficient data rows to initialize ivfflat lists
+            await conn.execute("CREATE INDEX IF NOT EXISTS reports_topic_idx ON reports (topic)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS reports_created_idx ON reports (created_at DESC)")
+            logger.info("Database migration completed: reports table and pgvector index ready.")
+    except Exception as e:
+        logger.warning(f"db_migrate warning: {e}")
+
+
+async def ltm_store(config: Config, topic: str, report: str, report_id: str) -> None:
+    embedding = await asyncio.to_thread(lambda: _get_model().encode(topic).tolist())
+    pool = get_pool()
+
+    # If pool is available, persist to PostgreSQL
+    if pool:
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO reports (id, topic, report, embedding, created_at)
+                    VALUES ($1, $2, $3, $4::vector, $5)
+                    ON CONFLICT (id) DO NOTHING
+                    """,
+                    report_id, topic, report, str(embedding), datetime.now(timezone.utc).replace(tzinfo=None),
+                )
+                return
+        except Exception as e:
+            logger.warning(f"ltm_store DB write error: {e}")
+
+    # Fallback to in-memory store
+    _in_memory_reports.append({
+        "id": report_id,
+        "topic": topic,
+        "report": report,
+        "embedding": embedding,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+
+async def ltm_search(config: Config, topic: str) -> dict | None:
+    embedding = await asyncio.to_thread(lambda: _get_model().encode(topic).tolist())
+    pool = get_pool()
+
+    if pool:
+        try:
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    SELECT id, topic, report, created_at,
+                           1 - (embedding <=> $1::vector) AS similarity
+                    FROM reports
+                    WHERE created_at > NOW() - ($2 || ' days')::INTERVAL
+                      AND 1 - (embedding <=> $1::vector) > $3
+                    ORDER BY similarity DESC LIMIT 1
+                    """,
+                    str(embedding), str(config.ltm_days), config.ltm_threshold,
+                )
+                return dict(row) if row else None
+        except Exception as e:
+            logger.warning(f"ltm_search DB read error: {e}")
+
+    # In-memory search fallback
+    for item in reversed(_in_memory_reports):
+        if item["topic"].lower() == topic.lower():
+            return item
+    return None
+
+
+async def ltm_search_related(config: Config, topic: str) -> str | None:
+    """Finds a related previous report to use as reference context for writer agent."""
+    embedding = await asyncio.to_thread(lambda: _get_model().encode(topic).tolist())
+    pool = get_pool()
+
+    if pool:
+        try:
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    SELECT report FROM reports
+                    WHERE 1 - (embedding <=> $1::vector) BETWEEN 0.5 AND $2
+                    ORDER BY created_at DESC LIMIT 1
+                    """,
+                    str(embedding), config.ltm_threshold - 0.01,
+                )
+                return row["report"] if row else None
+        except Exception as e:
+            logger.warning(f"ltm_search_related DB read error: {e}")
+
+    # In-memory search related fallback
+    if _in_memory_reports:
+        return _in_memory_reports[-1]["report"]
+    return None
+
+
+async def ltm_diff(config: Config, topic: str) -> str | None:
+    pool = get_pool()
+    if pool:
+        try:
+            async with pool.acquire() as conn:
+                rows = await conn.fetch(
+                    "SELECT report, created_at FROM reports WHERE topic = $1 ORDER BY created_at DESC LIMIT 2",
+                    topic,
+                )
+                if len(rows) >= 2:
+                    old_lines = rows[1]["report"].splitlines(keepends=True)
+                    new_lines = rows[0]["report"].splitlines(keepends=True)
+                    diff_lines = list(difflib.unified_diff(
+                        old_lines, new_lines,
+                        fromfile=f"previous ({rows[1]['created_at'].date()})",
+                        tofile=f"latest ({rows[0]['created_at'].date()})",
+                        lineterm="",
+                    ))
+                    return "\n".join(diff_lines[:config.ltm_diff_limit * 10]) or "No significant changes detected."
+        except Exception as e:
+            logger.warning(f"ltm_diff DB read error: {e}")
+
+    return None
