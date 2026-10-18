@@ -57,20 +57,23 @@ function verifyToken(token) {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 // 1. Record User Interaction (Rating, Bookmark, Like, Review)
-app.post('/api/v1/interactions', (req, res) => {
-  const { userId, animeId, animeTitle, rating, type = 'rating', review = '' } = req.body;
+app.post(['/api/v1/interactions', '/api/v1/interactions/reviews', '/interactions'], (req, res) => {
+  const { userId, animeId, animeTitle, rating, type = 'rating', review = '', user_id, anime_id, action } = req.body;
+  const effectiveUserId = userId || user_id;
+  const effectiveAnimeId = animeId || anime_id;
+  const effectiveType = action || type;
 
-  if (!userId || !animeId) {
+  if (!effectiveUserId || !effectiveAnimeId) {
     return res.status(400).json({ error: 'userId and animeId are required' });
   }
 
   const record = {
     id: `act_${crypto.randomBytes(6).toString('hex')}`,
-    userId: String(userId),
-    animeId: String(animeId),
-    animeTitle: animeTitle || `Anime #${animeId}`,
+    userId: String(effectiveUserId),
+    animeId: String(effectiveAnimeId),
+    animeTitle: animeTitle || `Anime #${effectiveAnimeId}`,
     rating: Number(rating) || 0,
-    type,
+    type: effectiveType,
     review,
     timestamp: new Date().toISOString()
   };
@@ -139,7 +142,7 @@ app.get('/api/v1/interactions/recent', (req, res) => {
 });
 
 // 5. Health Check
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/v1/interactions/health', '/interactions/health'], (req, res) => {
   return res.json({
     status: 'healthy',
     service: 'express-interaction-service',

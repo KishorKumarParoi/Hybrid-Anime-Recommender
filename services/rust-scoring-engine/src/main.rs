@@ -45,25 +45,34 @@ struct SimilarityResponse {
 
 #[derive(Deserialize, Clone)]
 struct AnimeCandidate {
-    id: String,
+    #[serde(default)]
+    id: serde_json::Value,
+    #[serde(default)]
     title: String,
+    #[serde(default)]
     genre: String,
+    #[serde(default)]
     vector: Vec<f32>,
 }
 
 #[derive(Deserialize)]
 struct RankRequest {
-    user_vector: Vec<f32>,
+    #[serde(alias = "query_vector")]
+    user_vector: Option<Vec<f32>>,
+    #[serde(default)]
     candidates: Vec<AnimeCandidate>,
+    #[serde(default)]
     top_k: Option<usize>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct RankedItem {
-    id: String,
+    id: serde_json::Value,
     title: String,
     genre: String,
     score: f32,
+    cosine_similarity: f32,
+    match_percentage: String,
 }
 
 #[derive(Serialize)]
@@ -71,6 +80,7 @@ struct RankResponse {
     top_k: usize,
     latency_us: u128,
     results: Vec<RankedItem>,
+    ranked_results: Vec<RankedItem>,
 }
 
 #[derive(Serialize)]
@@ -151,18 +161,22 @@ fn handle_client(mut stream: TcpStream) {
         return;
     }
 
-    if method == "POST" && path == "/api/v1/score/rank" {
+    if method == "POST" && (path == "/api/v1/score/rank" || path == "/api/v1/score/batch-similarity" || path == "/score/rank" || path == "/batch-similarity" || path == "/rank") {
         let start = Instant::now();
         match serde_json::from_str::<RankRequest>(body) {
             Ok(req) => {
-                let top_k = req.top_k.unwrap_or(10);
+                let target_vec = req.user_vector.unwrap_or_default();
+                let top_k = req.top_k.unwrap_or(req.candidates.len());
                 let mut scored: Vec<RankedItem> = req.candidates.into_iter().map(|c| {
-                    let sim = cosine_similarity(&req.user_vector, &c.vector);
+                    let sim = cosine_similarity(&target_vec, &c.vector);
+                    let rounded_sim = (sim * 10000.0).round() / 10000.0;
                     RankedItem {
                         id: c.id,
                         title: c.title,
                         genre: c.genre,
-                        score: (sim * 10000.0).round() / 10000.0,
+                        score: rounded_sim,
+                        cosine_similarity: rounded_sim,
+                        match_percentage: format!("{:.1}%", (sim * 100.0).max(0.0)),
                     }
                 }).collect();
 
@@ -174,7 +188,8 @@ fn handle_client(mut stream: TcpStream) {
                 let resp = RankResponse {
                     top_k: scored.len(),
                     latency_us,
-                    results: scored,
+                    results: scored.clone(),
+                    ranked_results: scored,
                 };
                 send_json_response(&mut stream, 200, &resp);
             }

@@ -97,7 +97,9 @@ func hashPassword(password string) string {
 }
 
 func checkPassword(password, hash string) bool {
-	return hashPassword(password) == hash
+	computed := []byte(hashPassword(password))
+	target := []byte(hash)
+	return hmac.Equal(computed, target)
 }
 
 // Minimal, zero-dependency JWT HS256 Token Creation
@@ -366,10 +368,22 @@ func main() {
 	port := getEnv("PORT", "8081")
 	mux := http.NewServeMux()
 
+	// Direct & Proxy Route Aliases
 	mux.HandleFunc("/api/v1/auth/signup", handleSignUp)
+	mux.HandleFunc("/api/auth/signup", handleSignUp)
+	mux.HandleFunc("/auth/signup", handleSignUp)
+
 	mux.HandleFunc("/api/v1/auth/signin", handleSignIn)
+	mux.HandleFunc("/api/auth/signin", handleSignIn)
+	mux.HandleFunc("/auth/signin", handleSignIn)
+
 	mux.HandleFunc("/api/v1/auth/verify", handleVerify)
+	mux.HandleFunc("/api/auth/verify", handleVerify)
+	mux.HandleFunc("/auth/verify", handleVerify)
+
 	mux.HandleFunc("/api/v1/auth/health", handleHealth)
+	mux.HandleFunc("/api/auth/health", handleHealth)
+	mux.HandleFunc("/auth/health", handleHealth)
 	mux.HandleFunc("/health", handleHealth)
 
 	log.Printf("[✓] Go Auth Microservice listening on :%s\n", port)
