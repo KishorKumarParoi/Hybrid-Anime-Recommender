@@ -6,18 +6,45 @@ use serde::{Deserialize, Serialize};
 
 // ─── Mathematical Similarity Engine ──────────────────────────────────────────
 
+#[inline(always)]
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    if a.len() != b.len() || a.is_empty() {
+    let len = a.len();
+    if len != b.len() || len == 0 {
         return 0.0;
     }
     let mut dot = 0.0f32;
     let mut norm_a = 0.0f32;
     let mut norm_b = 0.0f32;
 
-    for i in 0..a.len() {
-        dot += a[i] * b[i];
-        norm_a += a[i] * a[i];
-        norm_b += b[i] * b[i];
+    // 4-way unrolled accumulator loop for CPU Instruction-Level Parallelism (ILP) & SIMD auto-vectorization
+    let chunks = len / 4;
+    let remainder = len % 4;
+
+    for i in 0..chunks {
+        let base = i * 4;
+        let a0 = a[base];
+        let a1 = a[base + 1];
+        let a2 = a[base + 2];
+        let a3 = a[base + 3];
+
+        let b0 = b[base];
+        let b1 = b[base + 1];
+        let b2 = b[base + 2];
+        let b3 = b[base + 3];
+
+        dot += a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3;
+        norm_a += a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3;
+        norm_b += b0 * b0 + b1 * b1 + b2 * b2 + b3 * b3;
+    }
+
+    let tail_start = chunks * 4;
+    for i in 0..remainder {
+        let idx = tail_start + i;
+        let ai = a[idx];
+        let bi = b[idx];
+        dot += ai * bi;
+        norm_a += ai * ai;
+        norm_b += bi * bi;
     }
 
     let denom = norm_a.sqrt() * norm_b.sqrt();

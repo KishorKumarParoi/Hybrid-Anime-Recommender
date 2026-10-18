@@ -165,6 +165,8 @@ from app.routers.documents import router as documents_router
 from app.routers.streaming import router as streaming_router
 from app.routers.observability import router as observability_router
 
+from fastapi.middleware.gzip import GZipMiddleware
+
 app = FastAPI(
     title="Hybrid Anime Recommender & AI Security Platform",
     description="Enterprise Microservices Architecture: Recommender, LangGraph Multi-Agent, Kafka Streaming, DocumentDB, and PyRIT Red-Teaming.",
@@ -177,6 +179,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # ─── Mount Microservice API Routers (/api/v1) ──────────────────────────────────
 app.include_router(auth_router, prefix="/api/v1")
