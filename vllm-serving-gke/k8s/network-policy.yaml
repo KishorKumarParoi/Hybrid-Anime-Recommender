@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vllm-zero-trust-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: vllm
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Rule 1: Only allow incoming requests from authorized backend API pods or internal cluster callers
+    - from:
+        - podSelector:
+            matchLabels:
+              role: api-gateway
+        - podSelector:
+            matchLabels:
+              role: frontend
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system # allows cluster health checks
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Rule 2: Allow DNS queries to kube-dns
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Rule 3: Allow outbound HTTPS to Hugging Face / container registries, but EXPLICITLY DENY cloud metadata server (169.254.169.254)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32 # Block GCP / Azure metadata endpoint SSRF attacks
