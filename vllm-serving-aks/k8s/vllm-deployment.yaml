@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  labels:
+    app: vllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm
+  template:
+    metadata:
+      labels:
+        app: vllm
+    spec:
+      # Don't inject legacy Docker-link service env vars. The Service named "vllm" would
+      # otherwise set VLLM_PORT=tcp://<ip>:8000, which vLLM misreads as its own listen port
+      # and crashes ("VLLM_PORT ... appears to be a URI").
+      enableServiceLinks: false
+      # Land on the GPU node and tolerate its taint.
+      nodeSelector:
+        workload: gpu
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.22.1
+          # The image entrypoint already runs the OpenAI API server; pass only flags as args.
+          #
+          # Same model as the EKS build, retuned for the Azure T4 (Turing, SM 7.5, 16GB)
+          # instead of the L4 (Ada, SM 8.9, 24GB):
+          #   awq (not awq_marlin) — Marlin kernels need SM 8.0+; on Turing vLLM must use
+          #                          the original AWQ GEMM path. Slower, but it runs.
+          #   float16              — Turing has no bfloat16.
+          #   enforce-eager        — skip CUDA graph capture; buys back KV-cache headroom
+          #                          on the smaller card.
+          #   max-model-len 4096 / max-num-seqs 8 — halved vs the 24GB L4.
+          #
+          # T4 budget at util 0.90: ~14.4GB total, weights (4-bit AWQ) ~5.6GB,
+          # leaving ~8.5GB for the KV cache.
+          args:
+            - --model=Qwen/Qwen2.5-7B-Instruct-AWQ
+            - --quantization=awq
+            - --dtype=float16
+            - --enforce-eager
+            - --gpu-memory-utilization=0.90
+            - --max-model-len=4096
+            - --max-num-seqs=8
+            - --port=8000
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            requests:
+              cpu: "1" # NC4as_T4_v3 has only 4 vCPU total, minus kubelet reservation
+              memory: 8Gi
+            limits:
+              nvidia.com/gpu: "1" # k8s mirrors this to requests automatically
+          # First boot pulls a ~11GB image + downloads weights, so give the startup probe
+          # a long runway (~10 min) before liveness can kill the pod.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 20
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+spec:
+  type: ClusterIP
+  selector:
+    app: vllm
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
