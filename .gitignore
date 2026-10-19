@@ -48,6 +48,5 @@ node_modules/
 target/
 Cargo.lock
 
-# Go
+# Services
 services/go-auth-service/go-auth-service
-vllm-*
