@@ -1,129 +1,119 @@
-# Setup - vLLM on AKS
+# Setup - vLLM on AKS (Korea Central)
 
 ## Prerequisites
 
 **Local tools:**
 - Azure CLI (logged in) — `az account show`
-- Terraform ~> 1.15 — `terraform version`
+- Terraform ≥ 1.15 — `terraform version`
 - kubectl — `kubectl version --client`
 - Helm ≥ 3, and `jq` (pretty-prints the smoke-test JSON)
 - An HCP Terraform (Terraform Cloud) account — `terraform login`
 
 **Azure subscription:**
-- Permissions to create resource groups, AKS clusters, VMs, managed identities.
-- **GPU vCPU quota** — the #1 blocker. `Standard NCASv3_T4 Family vCPUs` must be **≥ 4**
-  (one `Standard_NC4as_T4_v3`). Approval is a human-reviewed request. Check with:
+- Subscription: **Azure for Students** (`a17774c6-e5cc-4461-b18c-df27f259f891`)
+- Region: **`koreacentral`**
+- Resource Providers:
   ```bash
-  az vm list-usage --location australiacentral \
-    --query "[?contains(name.value,'NCASv3_T4')]" --output table
+  # Ensure core providers are registered (already done for this cluster)
+  az provider register --namespace Microsoft.ContainerService --wait
+  az provider register --namespace Microsoft.Compute --wait
+  az provider register --namespace Microsoft.Network --wait
   ```
-- **Resource providers must be registered by hand.** `providers.tf` sets
-  `resource_provider_registrations = "none"` because azurerm's default bulk registration
-  409-throttles a fresh subscription:
-  ```bash
-  for ns in Microsoft.ContainerService Microsoft.Compute Microsoft.Network Microsoft.OperationalInsights; do
-    az provider register --namespace "$ns"
-  done
-  ```
-- Region: `australiacentral` (where the T4 quota was approved). Confirm the SKU is actually
-  deployable there — quota ≠ capacity:
-  ```bash
-  az vm list-skus --location australiacentral --size Standard_NC4as_T4 --output table
-  ```
-  > `Restrictions` must be empty. This SKU has **no availability zones** in this region, so
-  > don't set `zones` on the node pool.
-- Model `Qwen/Qwen2.5-7B-Instruct-AWQ` is ungated on Hugging Face — no token needed.
+- **Modular Quota Handling (`enable_gpu_node_pool`)**:
+  - **Zero-Quota Mode (`enable_gpu_node_pool = false`)**: Runs immediately without waiting for GPU quota. Deploys the free AKS control plane + the CPU system node pool (`Standard_D2s_v3`, 2 vCPUs) to run `k8s/inference-cpu-test.yaml`.
+  - **GPU Mode (`enable_gpu_node_pool = true`)**: Requires 4 vCPUs of `Standard NCASv3_T4 Family`. Check status with:
+    ```bash
+    az vm list-usage --location koreacentral \
+      --query "[?contains(name.value,'NCASv3_T4')]" --output table
+    ```
+- Model `Qwen/Qwen2.5-7B-Instruct-AWQ` is ungated on Hugging Face — no API token needed.
 
 **HCP Terraform workspace:**
-- Workspace `vllm-serving-aks` in your org, **Execution Mode = Local**.
-- Local execution is required: azurerm authenticates off your local `az login` session, which
-  a remote runner would not have.
+- Organization: **`kopa-samsu`**
+- Workspace: **`vllm-serving-aks`**
+- **Execution Mode = Local** (Required: azurerm authenticates off your local `az login` session on your Mac, while state is securely stored and locked in HCP Terraform Cloud).
 
 ---
 
-## Setup steps
+## Setup Steps
 
-Each step has a verify check — don't move on until it passes.
+### 1. Initialize and Provision Infrastructure with Terraform
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+> When prompted, type `yes`. Terraform creates:
+> - Resource Group: `rg-vllm-serving-aks`
+> - AKS Cluster: `vllm-serving-aks` (`sku_tier = "Free"`, $0/mo control plane)
+> - System Node Pool: 1x `Standard_D2s_v3` (2 vCPUs, 8GB RAM)
 
-1. **Confirm GPU quota is approved.**
+### 2. Connect `kubectl` to Your AKS Cluster
+```bash
+az aks get-credentials --resource-group rg-vllm-serving-aks --name vllm-serving-aks
+kubectl get nodes -o wide
+```
+> Verify: The `system` node appears and shows status **`Ready`**.
+
+---
+
+## Testing & Workload Deployment
+
+### Option A: Zero-Quota CPU / Mock Mode (Test Right Now)
+If your student GPU quota request is still pending review, test the entire cluster infrastructure and OpenAI-compatible API without needing a GPU:
+
+```bash
+# 1. Deploy the CPU inference mock
+kubectl apply -f ../k8s/inference-cpu-test.yaml
+
+# 2. Run the automated CPU verification smoke test
+../scripts/verify-cpu.sh
+```
+> Verify: The script connects, sends a prompt to `/v1/completions`, and outputs valid generated tokens!
+
+---
+
+### Option B: Full GPU Serving Mode (Post-Quota Approval)
+Once Microsoft Support approves your 4 vCPU T4 quota (or you upgrade to Pay-As-You-Go):
+
+1. **Attach the GPU node pool and NVIDIA Operator**:
    ```bash
-   az vm list-usage --location australiacentral \
-     --query "[?contains(name.value,'NCASv3_T4')]" --output table
+   terraform apply -var="enable_gpu_node_pool=true"
    ```
-   > Verify: `Limit` ≥ 4. `CurrentValue` should be `0` — the quota is subscription-wide, so a
-   > non-zero value means another cluster already holds the GPU.
-
-2. **Provision with Terraform** (resource group + AKS + system pool + GPU pool + GPU Operator,
-   one apply):
-   ```bash
-   cd terraform && terraform init && terraform apply   # ~10–15 min
-   ```
-   > Verify: apply completes and prints the `configure_kubectl` output.
-
-3. **Point kubectl at the cluster:**
-   ```bash
-   az aks get-credentials --resource-group rg-vllm-serving-aks --name vllm-serving-aks
-   kubectl get nodes -o wide
-   ```
-   > Verify: 1 system + 1 GPU node, both `Ready`. The GPU node must show
-   > `Ubuntu 22.04` and `containerd://1.7.x`. If `CONTAINER-RUNTIME` reads
-   > `containerd://unknown` and the node is `NotReady`, the containerd drop-in version bug hit —
-   > see [project-summary.md](project-summary.md) war story 3.
-
-4. **Confirm the GPU Operator installed and the GPU is advertised:**
+2. **Verify GPU operator and node readiness**:
    ```bash
    kubectl -n gpu-operator get pods
    kubectl get nodes -o jsonpath='{.items[*].status.allocatable.nvidia\.com/gpu}{"\n"}'
    ```
-   > Verify: pods `Running`/`Completed` (`nvidia-cuda-validator` shows `Completed`); a node
-   > shows `nvidia.com/gpu: "1"`. **Until that number appears, vLLM will sit `Pending`.**
-   > If it never appears, check the Operator DaemonSets' tolerations first.
-
-5. **Deploy vLLM:**
+   > Verify: Node displays `nvidia.com/gpu: "1"`.
+3. **Deploy vLLM**:
    ```bash
-   kubectl apply -f k8s/vllm-deployment.yaml
+   kubectl apply -f ../k8s/vllm-deployment.yaml
    kubectl get pods -l app=vllm -w
    ```
-   > Verify: pod schedules on the GPU node (not `Pending`). First boot is slow — pulls a ~11 GB
-   > image + downloads weights (~10 min); the startup probe allows for it.
-
-6. **Prove tokens + read GPU memory:**
+4. **Run live GPU token verification & nvidia-smi**:
    ```bash
-   bash scripts/verify.sh
+   ../scripts/verify.sh
    ```
-   (waits for the pod, port-forwards, POSTs `/v1/completions`, runs `nvidia-smi` in the pod,
-   greps the KV-cache log lines)
-   > Verify: response contains generated `"text"`; `nvidia-smi` shows ~13.6 GB of 15 GB used;
-   > logs report `Available KV cache memory: 7.32 GiB`.
-
-7. **Tear down** — the GPU bills whether you're using it or not:
-   ```bash
-   terraform destroy
-   ```
-   > Verify: `az vm list-usage` shows `CurrentValue` back to `0`, and
-   > `az group exists --name rg-vllm-serving-aks` returns `false`.
 
 ---
 
-## Costs (australiacentral, on-demand)
+## Operational Cost & Teardown
 
 | State | ~$/hr | What's running |
-|---|---|---|
-| **Active** (working) | **~$0.81** | everything up — the only time the GPU bills |
-| **Destroyed** (`terraform destroy`) | **$0** | nothing |
+|:---|:---|:---|
+| **CPU Testing Mode** | **~$0.096** | Control plane ($0) + `Standard_D2s_v3` system node |
+| **Active GPU Serving** | **~$0.780** | Control plane ($0) + System node + `Standard_NC4as_T4_v3` GPU node |
+| **Destroyed** (`terraform destroy`) | **$0.00** | Nothing |
 
-Breakdown at "active": GPU `Standard_NC4as_T4_v3` **$0.684/hr** + system node
-`Standard_D2s_v3` **$0.125/hr** + AKS control plane **$0** (`sku_tier = "Free"`).
-
-Because the control plane is free, there is **no cheap middle state** worth keeping — unlike a
-paid-control-plane cluster, destroying everything costs nothing but a ~15 min rebuild. Destroy
-by default.
-
-A focused 2h session ≈ **$1.60**. Leaving it up for 24h ≈ **$19**. A full month ≈ **$580** —
-don't.
-
-**Guardrails:** `terraform destroy` after every session · tag `project=vllm-serving-aks` · set an
-**Azure Cost Management budget alert** as the backstop for the night you forget.
-
-**Spot is 71% cheaper ($0.198/hr) but currently blocked** — `Total Regional Low-priority vCPUs`
-is 3 and this VM needs 4. Spot and on-demand draw from separate quota pools.
+### Cost Reduction Tools
+- **Scale GPU to Zero**: When you are not actively benchmarking, scale the GPU node pool to 0:
+  ```bash
+  ../scripts/gpu-nodes-scaling.sh down
+  ```
+  *(Scale back up with `../scripts/gpu-nodes-scaling.sh up` when ready).*
+- **Complete Teardown**:
+  ```bash
+  terraform destroy -auto-approve
+  ```
+  > Destroys all Azure resources and halts all billing immediately.

@@ -20,7 +20,7 @@ Makes `verify.sh` and `gpu-nodes-scaling.sh` executable.
 ### 1.1 Confirm GPU quota is available
 
 ```bash
-az vm list-usage --location australiacentral \
+az vm list-usage --location koreacentral \
   --query "[?contains(name.value,'NCASv3_T4')]" --output table
 ```
 Shows `CurrentValue` vs `Limit` for the T4 GPU family. **Result: `0 / 4`** — 4 vCPUs free =
@@ -31,7 +31,7 @@ only one GPU cluster can exist at a time.
 ### 1.2 Dump ALL quota families (find what else is constrained)
 
 ```bash
-az vm list-usage --location australiacentral --output json \
+az vm list-usage --location koreacentral --output json \
   | jq -r '.[] | select(.limit > 0) | "\(.currentValue)/\(.limit)\t\(.localName)"' \
   | sort -t$'\t' -k2
 ```
@@ -47,13 +47,13 @@ The full picture rather than one family. The four lines that matter here:
 ### 1.3 Get real pricing (never estimate — query the API)
 
 ```bash
-curl -s "https://prices.azure.com/api/retail/prices?\$filter=armRegionName%20eq%20'australiacentral'%20and%20armSkuName%20eq%20'Standard_NC4as_T4_v3'%20and%20priceType%20eq%20'Consumption'" \
+curl -s "https://prices.azure.com/api/retail/prices?\$filter=armRegionName%20eq%20'koreacentral'%20and%20armSkuName%20eq%20'Standard_NC4as_T4_v3'%20and%20priceType%20eq%20'Consumption'" \
   | jq -r '.Items[] | "\(.retailPrice)\t\(.productName)\t\(.meterName)"' | sort -n
 ```
 Azure's public retail price API — no auth needed. **Filter out `Windows` product names**
 (we run Ubuntu) and `Spot`/`Low Priority` meters (no quota for them here).
 
-Result for `Standard_NC4as_T4_v3` in `australiacentral`:
+Result for `Standard_NC4as_T4_v3` in `koreacentral`:
 
 | Price/hr | Product | Usable? |
 |---|---|---|
@@ -83,7 +83,7 @@ AKS actually needs, by hand. **All four returned `Registered`.**
 ### 1.5 Confirm the GPU SKU is actually deployable
 
 ```bash
-az vm list-skus --location australiacentral --size Standard_NC4as_T4 --output json \
+az vm list-skus --location koreacentral --size Standard_NC4as_T4 --output json \
   | jq -r '.[] | "\(.name)\tzones=\(.locationInfo[0].zones // [] | join(",") | if . == "" then "none" else . end)\trestrictions=\(if (.restrictions|length)==0 then "NONE" else ([.restrictions[].reasonCode]|join(",")) end)"'
 ```
 Quota ≠ capacity. This checks Azure will *actually* let you deploy the SKU in that region.
@@ -188,7 +188,7 @@ same things faster but strand the state file.
 
 Confirm the GPU quota was released:
 ```bash
-az vm list-usage --location australiacentral \
+az vm list-usage --location koreacentral \
   --query "[?contains(name.value,'NCASv3_T4')]" --output table   # CurrentValue back to 0
 az group exists --name rg-vllm-serving-aks                        # false = fully deleted
 ```

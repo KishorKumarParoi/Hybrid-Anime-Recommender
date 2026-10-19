@@ -8,10 +8,10 @@ graph TB
     end
 
     subgraph hcp["HCP Terraform"]
-        STATE["Remote State\nShikha_Projects / vllm-serving-aks\nExecution Mode: LOCAL"]
+        STATE["Remote State\nkopa-samsu / vllm-serving-aks\nExecution Mode: LOCAL"]
     end
 
-    subgraph azure["Azure — australiacentral"]
+    subgraph azure["Azure — koreacentral"]
 
         subgraph rg["Resource Group: rg-vllm-serving-aks  (you declare)"]
 
