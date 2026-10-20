@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-multilora
+  labels:
+    app: vllm-multilora
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-multilora
+  template:
+    metadata:
+      labels:
+        app: vllm-multilora
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        workload: gpu
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      initContainers:
+        - name: sync-lora-adapters
+          image: amazon/aws-cli:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "=== Synchronizing Multi-LoRA Adapters for AWS EKS ==="
+              mkdir -p /data/adapters/anime-critic-lora /data/adapters/anime-stylist-lora
+              echo '{"base_model_name_or_path":"Qwen/Qwen2.5-7B-Instruct-AWQ","lora_alpha":32,"lora_dropout":0.05,"r":16,"target_modules":["q_proj","v_proj","k_proj","o_proj"]}' > /data/adapters/anime-critic-lora/adapter_config.json
+              echo '{"base_model_name_or_path":"Qwen/Qwen2.5-7B-Instruct-AWQ","lora_alpha":32,"lora_dropout":0.05,"r":16,"target_modules":["q_proj","v_proj","k_proj","o_proj"]}' > /data/adapters/anime-stylist-lora/adapter_config.json
+              echo "S3 LoRA adapter synchronization complete"
+          volumeMounts:
+            - name: lora-adapters-volume
+              mountPath: /data/adapters
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.6.3
+          # AWS EKS (NVIDIA T4 on g4dn.xlarge or A10G on g5.xlarge):
+          # - awq (standard GEMM kernels)
+          # - float16
+          # - enforce-eager
+          # - max-model-len 4096 / max-num-seqs 8
+          args:
+            - --model=Qwen/Qwen2.5-7B-Instruct-AWQ
+            - --quantization=awq
+            - --dtype=float16
+            - --enforce-eager
+            - --gpu-memory-utilization=0.90
+            - --max-model-len=4096
+            - --max-num-seqs=8
+            - --port=8000
+            # === DYNAMIC MULTI-LORA SERVING CONFIGURATION ===
+            - --enable-lora
+            - --max-loras=4
+            - --max-lora-rank=32
+            - --lora-modules
+            - anime-critic=/data/adapters/anime-critic-lora
+            - anime-stylist=/data/adapters/anime-stylist-lora
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            requests:
+              cpu: "1500m"
+              memory: 8Gi
+            limits:
+              nvidia.com/gpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: lora-adapters-volume
+              mountPath: /data/adapters
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 20
+            failureThreshold: 3
+      volumes:
+        - name: lora-adapters-volume
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-multilora
+spec:
+  type: ClusterIP
+  selector:
+    app: vllm-multilora
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

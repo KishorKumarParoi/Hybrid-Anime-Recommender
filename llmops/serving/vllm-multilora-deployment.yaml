@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-multilora
+  labels:
+    app: vllm-multilora
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-multilora
+  template:
+    metadata:
+      labels:
+        app: vllm-multilora
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        workload: gpu
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.6.3
+          args:
+            - --model=Qwen/Qwen2.5-7B-Instruct-AWQ
+            - --quantization=awq_marlin
+            - --dtype=bfloat16
+            - --gpu-memory-utilization=0.90
+            - --max-model-len=8192
+            - --max-num-seqs=16
+            - --port=8000
+            # === DYNAMIC MULTI-LORA SERVING CONFIGURATION ===
+            - --enable-lora
+            - --max-loras=4
+            - --max-lora-rank=32
+            - --lora-modules
+            - anime-critic=/data/adapters/anime-critic-lora
+            - anime-stylist=/data/adapters/anime-stylist-lora
+          ports:
+            - name: http
+              containerPort: 8000
+          resources:
+            requests:
+              cpu: "2"
+              memory: 10Gi
+            limits:
+              nvidia.com/gpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: lora-adapters-volume
+              mountPath: /data/adapters
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 20
+            failureThreshold: 3
+      volumes:
+        - name: lora-adapters-volume
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-multilora
+spec:
+  type: ClusterIP
+  selector:
+    app: vllm-multilora
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
