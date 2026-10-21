@@ -42,11 +42,15 @@ By decoupling the foundational world knowledge in a frozen 4-bit base model (`Qw
 |     +-------------------------------------------------------------------+         |
 |                                         |                                         |
 |                                         v                                         |
-|  3. PARAMETER-EFFICIENT QLORA FINE-TUNING (llmops/training/)                      |
+|  3. ADVANCED PARAMETER-EFFICIENT QLORA ENGINE (llmops/training/)             |
 |     +-------------------------------------------------------------------+         |
 |     | - Base Model: Frozen 4-bit NF4 / AWQ Foundation                   |         |
+|     | - RSLoRA (Rank-Stabilized): Scaling by alpha / sqrt(r)            |         |
+|     | - NeFTune (alpha=5.0): Injects uniform noise into embeddings      |         |
+|     | - Completion-Only Loss Masking: Masks prompt tokens with -100     |         |
 |     | - Target Modules: q_proj, k_proj, v_proj, o_proj, gate, up, down  |         |
-|     | - Hyperparams: Rank r=16, Alpha=32, Dropout=0.05, AdamW-torch     |         |
+|     | - Optimizer: Paged AdamW 8-bit (CUDA) / AdamW-torch (MPS/CPU)     |         |
+|     | - Hyperparams: r=16/32, alpha=32/64, Cosine LR, Warmup, Clip=0.3 |         |
 |     | - Output: Standardized PEFT adapter checkpoint (~50MB - 120MB)    |         |
 |     +-------------------------------------------------------------------+         |
 |                                         |                                         |
@@ -81,6 +85,7 @@ By decoupling the foundational world knowledge in a frozen 4-bit base model (`Qw
 |     - Request B: model="anime-stylist" --> Stylist Persona Response               |
 |     - Request C: model=None            --> Base Foundation Response               |
 +-----------------------------------------------------------------------------------+
+
 
 ---
 
@@ -205,3 +210,10 @@ When asked about LLM fine-tuning and inference architecture in technical intervi
 > *"Hardware architecture dictates the optimal GEMM kernels and memory layout:*
 > 1. *Azure NC4as_T4_v3 features an NVIDIA T4 (Turing, SM 7.5, 16GB VRAM). Turing lacks native bfloat16 and cannot run Marlin kernels, which require compute capability SM 8.0+. On T4, vLLM must be configured with `--quantization=awq` (classic GEMM), `--dtype=float16`, `--enforce-eager` (skipping CUDA graph capture to conserve KV cache memory), with context length capped at 4096 tokens.*
 > 2. *GCP GKE features an NVIDIA L4 (Ada Lovelace, SM 8.9, 24GB VRAM). Ada supports native bfloat16 and high-throughput Marlin quantized GEMM kernels (`--quantization=awq_marlin`), providing 2.5x higher token generation throughput. The 24GB memory footprint allows 8192 context length and 16 concurrent sequences while dedicating 16.7 GB strictly to the PageAttention KV cache pool."*
+
+### Q4: "How do you optimize LoRA convergence stability and instruction fidelity?"
+> *"We employ four state-of-the-art algorithmic improvements:*
+> 1. *Rank-Stabilized LoRA (RSLoRA): Classic LoRA scales updates by $\frac{\alpha}{r}$, which degrades gradient magnitude as rank $r$ scales. RSLoRA scales updates by $\frac{\alpha}{\sqrt{r}}$, stabilizing gradient flow across arbitrary rank choices ($r=16 \to 64$).*
+> 2. *Completion-Only Loss Masking: Rather than computing causal LM loss over the entire token sequence, we mask prompt and system tokens with label `-100`. Loss is computed strictly on assistant generation tokens, preventing loss dilution and eliminating prompt memorization.*
+> 3. *NeFTune (Noisy Embedding Fine-Tuning): Injects uniform noise $\alpha=5.0$ into embedding vectors during forward passes. This acts as continuous data augmentation, preventing overfitting to verbatim prompt phrasing and boosting general conversational performance.*
+> 4. *Paged 8-bit AdamW: On CUDA hardware, we employ `paged_adamw_8bit`. Paged optimizers dynamically offload optimizer states to host RAM during peak backprop activations, eliminating out-of-memory spikes and reducing optimizer memory footprint by 75%."*

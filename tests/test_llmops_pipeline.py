@@ -91,15 +91,32 @@ class TestDatasetCuration:
 
 
 class TestLoRATraining:
-    """Tests for QLoRA training configuration and artifact export."""
+    """Tests for QLoRA training configuration, advanced regularization, and artifact export."""
 
     def test_training_config_defaults(self):
         config = TrainingConfig()
         assert config.r == 16
         assert config.lora_alpha == 32
+        assert config.use_rslora is True
+        assert config.neftune_noise_alpha == 5.0
+        assert config.mask_prompt_loss is True
+        assert config.effective_batch_size == 8
         assert config.bits == 4
         assert "q_proj" in config.target_modules
         assert "v_proj" in config.target_modules
+
+    def test_preset_configurations(self):
+        from llmops.training.config import get_preset_config
+        critic_cfg = get_preset_config("anime-critic")
+        assert critic_cfg.r == 32
+        assert critic_cfg.lora_alpha == 64
+        assert critic_cfg.use_rslora is True
+        assert "anime-critic-lora" in critic_cfg.output_dir
+
+        stylist_cfg = get_preset_config("anime-stylist")
+        assert stylist_cfg.r == 16
+        assert stylist_cfg.neftune_noise_alpha == 6.0
+        assert "anime-stylist-lora" in stylist_cfg.output_dir
 
     def test_simulation_training_run(self, tmp_path):
         adapter_output = tmp_path / "test-adapter"
@@ -108,11 +125,16 @@ class TestLoRATraining:
             num_train_epochs=1,
             r=16,
             lora_alpha=32,
+            use_rslora=True,
+            neftune_noise_alpha=5.0,
         )
         trainer = LoRATrainer(config=config, dry_run=True)
         summary = trainer.train()
 
         assert summary["status"] == "COMPLETED_SIMULATION"
+        assert summary["use_rslora"] is True
+        assert summary["neftune_noise_alpha"] == 5.0
+        assert summary["effective_batch_size"] == 8
         assert adapter_output.exists()
         assert (adapter_output / "adapter_config.json").exists()
         assert (adapter_output / "training_metadata.json").exists()
@@ -121,6 +143,7 @@ class TestLoRATraining:
             cfg = json.load(f)
             assert cfg["r"] == 16
             assert cfg["lora_alpha"] == 32
+            assert cfg["use_rslora"] is True
 
 
 class TestEvaluationAndGating:

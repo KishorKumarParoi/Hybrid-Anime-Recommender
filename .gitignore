@@ -50,3 +50,4 @@ Cargo.lock
 
 # Services
 services/go-auth-service/go-auth-service
+Complete-*

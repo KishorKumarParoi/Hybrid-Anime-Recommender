@@ -1,7 +1,11 @@
-"""Production LoRA / QLoRA Fine-Tuning Pipeline.
+"""
+Production LoRA / QLoRA Fine-Tuning Pipeline.
 
-Trains parameter-efficient adapters on top of frozen LLM foundations,
-tracking loss, gradient updates, and exporting standardized adapter artifacts.
+Trains parameter-efficient adapters on top of frozen LLM foundations, incorporating:
+- RSLoRA (Rank-Stabilized LoRA: scaling by alpha / sqrt(r))
+- NeFTune (Noisy Embedding Fine-Tuning)
+- Completion-Only Loss Masking (loss calculated strictly on assistant response tokens)
+- Dynamic hardware & optimizer negotiation (paged_adamw_8bit on CUDA, adamw_torch on MPS/CPU)
 """
 
 from __future__ import annotations
@@ -12,54 +16,90 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Ensure project root is in sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import torch
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
+    DataCollatorForSeq2Seq,
     TrainingArguments,
 )
 from trl import SFTTrainer
 
-from llmops.training.config import LoRAConfig
+from llmops.training.config import LoRAConfig, get_preset_config
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("LoRATrainer")
 
 
-def get_device_map() -> Tuple[str, torch.dtype]:
-    """Detect available compute hardware."""
+def get_hardware_and_optimizer(requested_optim: str) -> Tuple[str, torch.dtype, str]:
+    """
+    Detects hardware capabilities and selects the optimal precision and optimizer.
+    
+    Returns:
+        (device_map, compute_dtype, negotiated_optimizer)
+    """
     if torch.cuda.is_available():
-        logger.info("CUDA detected: %s", torch.cuda.get_device_name(0))
-        return "auto", torch.bfloat16
+        gpu_name = torch.cuda.get_device_name(0)
+        capability = torch.cuda.get_device_capability(0)
+        logger.info("CUDA detected: %s (Compute Capability: %s)", gpu_name, capability)
+        # Ampere (SM 8.0), Ada Lovelace (SM 8.9), Hopper (SM 9.0) support bfloat16
+        if capability[0] >= 8:
+            dtype = torch.bfloat16
+        else:
+            dtype = torch.float16
+        optim = requested_optim  # e.g., paged_adamw_8bit or adamw_torch
+        return "auto", dtype, optim
     elif torch.backends.mps.is_available():
-        logger.info("Apple Silicon MPS detected")
-        return "mps", torch.float32
+        logger.info("Apple Silicon MPS detected (switching optimizer to adamw_torch, dtype float32)")
+        return "mps", torch.float32, "adamw_torch"
     else:
-        logger.info("Running on CPU")
-        return "cpu", torch.float32
+        logger.info("Running on CPU (switching optimizer to adamw_torch, dtype float32)")
+        return "cpu", torch.float32, "adamw_torch"
 
 
-def format_chatml_prompt(sample: Dict[str, Any], tokenizer: Any) -> Dict[str, str]:
-    """Formats ChatML message records into training text using model tokenizer chat template."""
+def tokenize_with_completion_masking(
+    sample: Dict[str, Any],
+    tokenizer: Any,
+    max_seq_length: int = 1024,
+) -> Dict[str, List[int]]:
+    """
+    Tokenizes ChatML conversation and applies label masking (-100) to system and user prompt tokens.
+    Gradients and cross-entropy loss are computed exclusively on the assistant response.
+    """
     messages = sample.get("messages", [])
-    if hasattr(tokenizer, "apply_chat_template") and tokenizer.chat_template:
-        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+    if len(messages) < 2:
+        return {"input_ids": [], "labels": [], "attention_mask": []}
+
+    # Format prompt (system + user) and full conversation
+    prompt_text = tokenizer.apply_chat_template(messages[:-1], add_generation_prompt=True, tokenize=False)
+    full_text = tokenizer.apply_chat_template(messages, tokenize=False)
+
+    prompt_ids = tokenizer.encode(prompt_text, add_special_tokens=False)
+    full_ids = tokenizer.encode(full_text, add_special_tokens=False)
+
+    # Truncate if exceeding max length
+    if len(full_ids) > max_seq_length:
+        full_ids = full_ids[:max_seq_length]
+        prompt_len = min(len(prompt_ids), max_seq_length)
     else:
-        # Fallback standard ChatML formatting
-        text = ""
-        for msg in messages:
-            role = msg["role"]
-            content = msg["content"]
-            text += f"<|im_start|>{role}\n{content}<|im_end|>\n"
-    return {"text": text}
+        prompt_len = len(prompt_ids)
+
+    # Set labels: -100 for prompt tokens, token IDs for assistant completion tokens
+    labels = [-100] * prompt_len + full_ids[prompt_len:]
+
+    return {
+        "input_ids": full_ids,
+        "labels": labels,
+        "attention_mask": [1] * len(full_ids),
+    }
 
 
 def train_lora_pipeline(cfg: LoRAConfig, dry_run: bool = False) -> Path:
@@ -74,9 +114,10 @@ def train_lora_pipeline(cfg: LoRAConfig, dry_run: bool = False) -> Path:
             "r": cfg.r,
             "lora_alpha": cfg.lora_alpha,
             "lora_dropout": cfg.lora_dropout,
+            "use_rslora": cfg.use_rslora,
             "target_modules": cfg.target_modules,
             "peft_type": "LORA",
-            "task_type": "CAUSAL_LM"
+            "task_type": "CAUSAL_LM",
         }
         with (output_dir / "adapter_config.json").open("w", encoding="utf-8") as f:
             json.dump(adapter_config, f, indent=2)
@@ -89,9 +130,15 @@ def train_lora_pipeline(cfg: LoRAConfig, dry_run: bool = False) -> Path:
             "status": "COMPLETED_SIMULATION",
             "mode": "dry_run_simulation",
             "steps": cfg.max_steps,
+            "r": cfg.r,
+            "lora_alpha": cfg.lora_alpha,
+            "use_rslora": cfg.use_rslora,
+            "neftune_noise_alpha": cfg.neftune_noise_alpha,
+            "loss_masking": "completion_only" if cfg.mask_prompt_loss else "full_sequence",
+            "effective_batch_size": cfg.effective_batch_size,
             "trainable_params": 1640000,
             "trainable_percentage": 0.32,
-            "base_model": cfg.base_model_id
+            "base_model": cfg.base_model_id,
         }
         with (output_dir / "training_metadata.json").open("w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
@@ -105,7 +152,7 @@ def train_lora_pipeline(cfg: LoRAConfig, dry_run: bool = False) -> Path:
         tokenizer.pad_token = tokenizer.eos_token
 
     # Hardware & Quantization setup
-    device_map, compute_dtype = get_device_map()
+    device_map, compute_dtype, resolved_optim = get_hardware_and_optimizer(cfg.optim)
     bnb_config = None
     if torch.cuda.is_available() and cfg.use_4bit:
         logger.info("Applying 4-bit NormalFloat (NF4) quantization")
@@ -128,10 +175,18 @@ def train_lora_pipeline(cfg: LoRAConfig, dry_run: bool = False) -> Path:
     if torch.cuda.is_available() and cfg.use_4bit:
         model = prepare_model_for_kbit_training(model)
 
-    # Attach LoRA adapter
+    # Attach LoRA adapter with Rank-Stabilized LoRA (RSLoRA)
+    logger.info(
+        "Configuring PEFT LoRA (r=%d, alpha=%d, use_rslora=%s, target_modules=%s)",
+        cfg.r,
+        cfg.lora_alpha,
+        cfg.use_rslora,
+        cfg.target_modules,
+    )
     peft_config = LoraConfig(
         r=cfg.r,
         lora_alpha=cfg.lora_alpha,
+        use_rslora=cfg.use_rslora,
         target_modules=cfg.target_modules,
         lora_dropout=cfg.lora_dropout,
         bias=cfg.bias,
@@ -150,36 +205,55 @@ def train_lora_pipeline(cfg: LoRAConfig, dry_run: bool = False) -> Path:
     # Load dataset
     logger.info("Loading dataset from %s", cfg.train_data_path)
     raw_dataset = load_dataset("json", data_files={"train": cfg.train_data_path, "validation": cfg.val_data_path})
-    train_dataset = raw_dataset["train"].map(lambda x: format_chatml_prompt(x, tokenizer))
-    val_dataset = raw_dataset["validation"].map(lambda x: format_chatml_prompt(x, tokenizer))
+
+    if cfg.mask_prompt_loss:
+        logger.info("Applying Completion-Only Loss Masking (-100 for prompt tokens)")
+        train_dataset = raw_dataset["train"].map(
+            lambda x: tokenize_with_completion_masking(x, tokenizer, cfg.max_seq_length),
+            remove_columns=raw_dataset["train"].column_names,
+        )
+        val_dataset = raw_dataset["validation"].map(
+            lambda x: tokenize_with_completion_masking(x, tokenizer, cfg.max_seq_length),
+            remove_columns=raw_dataset["validation"].column_names,
+        )
+    else:
+        train_dataset = raw_dataset["train"]
+        val_dataset = raw_dataset["validation"]
 
     training_args = TrainingArguments(
         output_dir=str(output_dir),
         per_device_train_batch_size=cfg.per_device_train_batch_size,
         gradient_accumulation_steps=cfg.gradient_accumulation_steps,
         learning_rate=cfg.learning_rate,
+        lr_scheduler_type=cfg.lr_scheduler_type,
         warmup_ratio=cfg.warmup_ratio,
+        weight_decay=cfg.weight_decay,
+        max_grad_norm=cfg.max_grad_norm,
         max_steps=cfg.max_steps,
         logging_steps=cfg.logging_steps,
         save_steps=cfg.save_steps,
-        optim=cfg.optim,
+        save_total_limit=cfg.save_total_limit,
+        optim=resolved_optim,
+        neftune_noise_alpha=cfg.neftune_noise_alpha,
         fp16=(compute_dtype == torch.float16),
         bf16=(compute_dtype == torch.bfloat16),
         save_strategy="steps",
         report_to="none",
     )
 
+    data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, pad_to_multiple_of=8)
+
     trainer = SFTTrainer(
         model=model,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        dataset_text_field="text",
+        data_collator=data_collator,
         max_seq_length=cfg.max_seq_length,
         tokenizer=tokenizer,
         args=training_args,
     )
 
-    logger.info("Starting fine-tuning training loop...")
+    logger.info("Starting fine-tuning training loop (Effective Batch Size: %d)...", cfg.effective_batch_size)
     trainer.train()
 
     logger.info("Saving trained LoRA adapter to %s", output_dir)
@@ -187,13 +261,18 @@ def train_lora_pipeline(cfg: LoRAConfig, dry_run: bool = False) -> Path:
     tokenizer.save_pretrained(str(output_dir))
 
     metadata = {
-        "status": "completed",
+        "status": "COMPLETED",
         "steps": cfg.max_steps,
+        "effective_batch_size": cfg.effective_batch_size,
         "trainable_params": trainable_params,
         "trainable_percentage": round(100 * trainable_params / all_params, 4),
         "base_model": cfg.base_model_id,
         "rank": cfg.r,
         "alpha": cfg.lora_alpha,
+        "use_rslora": cfg.use_rslora,
+        "neftune_noise_alpha": cfg.neftune_noise_alpha,
+        "loss_masking": "completion_only" if cfg.mask_prompt_loss else "full_sequence",
+        "optimizer": resolved_optim,
     }
     with (output_dir / "training_metadata.json").open("w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
@@ -224,18 +303,27 @@ class LoRATrainer:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run QLoRA / LoRA fine-tuning for anime stylist adapter")
+    parser = argparse.ArgumentParser(description="Run production QLoRA fine-tuning with RSLoRA, NeFTune, and Loss Masking")
+    parser.add_argument("--persona", choices=["anime-critic", "anime-stylist", "default"], default="default", help="Preset configuration persona")
     parser.add_argument("--base-model", type=str, default="Qwen/Qwen2.5-0.5B-Instruct", help="Hugging Face base model ID")
     parser.add_argument("--output-dir", type=str, default="artifacts/adapters/anime-stylist-lora", help="Output directory for adapter")
     parser.add_argument("--max-steps", type=int, default=15, help="Maximum training steps")
+    parser.add_argument("--rslora", action="store_true", default=True, help="Enable Rank-Stabilized LoRA")
+    parser.add_argument("--neftune", type=float, default=5.0, help="NeFTune noise alpha")
     parser.add_argument("--dry-run", action="store_true", help="Simulate training without downloading full weights")
     args = parser.parse_args()
 
-    cfg = LoRAConfig(
-        base_model_id=args.base_model,
-        output_dir=args.output_dir,
-        max_steps=args.max_steps,
-    )
+    if args.persona != "default":
+        cfg = get_preset_config(args.persona)
+    else:
+        cfg = LoRAConfig(
+            base_model_id=args.base_model,
+            output_dir=args.output_dir,
+            max_steps=args.max_steps,
+            use_rslora=args.rslora,
+            neftune_noise_alpha=args.neftune,
+        )
+
     train_lora_pipeline(cfg, dry_run=args.dry_run)
 
 
