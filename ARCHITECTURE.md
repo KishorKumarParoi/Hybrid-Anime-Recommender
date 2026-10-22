@@ -201,3 +201,44 @@ feature/*  ────────>  test  ────────>  dev  ─�
 
 3. **"How does the system handle an outage of external databases?"**
    * *Answer:* *"Every microservice in our platform implements an **Offline Resilience Fallback pattern**. If PostgreSQL or MongoDB is unreachable, the services transparently fall back to thread-safe in-memory maps (`sync.RWMutex` in Go, in-memory structures in Node.js and Python), allowing health probes and core read/write interactions to remain responsive without crashing the client tier."*
+
+---
+
+## 8. Continuous Fine-Tuning & Dynamic Multi-LoRA Serving Tier
+
+```
++------------------------------------------------------------------------------------+
+|                      CONTINUOUS LLMOPS & MULTI-LORA LIFECYCLE                      |
++------------------------------------------------------------------------------------+
+| 1. Ingestion Flywheel | Kafka Telemetry -> PII Scrubbing -> 15% General Replay Buffer|
+| 2. Parameter Tuning   | QLoRA (4-bit NF4) + RSLoRA (alpha/sqrt(r)) + NeFTune Noise |
+| 3. Loss Masking       | Completion-Only Token Masking (-100 for prompt tokens)     |
+| 4. Quality Gating     | 4-Dimension Rubric (Domain, JSON, Reasoning, Retention >=0.85) |
+| 5. In-Flight Serving  | vLLM Dynamic Multi-LoRA on single GPU (< 1ms swap latency)  |
++------------------------------------------------------------------------------------+
+```
+
+### Visual Workflow Blueprints
+- **System Architecture**: `docs/images/01_architecture_overview.jpg`
+- **Recommender Engine**: `docs/images/02_hybrid_recommender_pipeline.jpg`
+- **Curation Flywheel**: `docs/images/03_llmops_curation_flywheel.jpg`
+- **RSLoRA Tuning**: `docs/images/04_qlora_rslora_training.jpg`
+- **Quality Gating**: `docs/images/05_evaluation_gating_cicd.jpg`
+- **Multi-LoRA GPU Serving**: `docs/images/06_dynamic_multilora_serving.jpg`
+- **Multi-Cloud GitOps**: `docs/images/07_multicloud_gitops.jpg`
+
+---
+
+## 9. Multi-Cloud GPU Serving Matrix & Memory Allocation
+
+| Resource Dimension | Azure AKS (NC4as_T4_v3) | GCP GKE (g2-standard-4) | AWS EKS (g4dn.xlarge / g5) |
+| :--- | :--- | :--- | :--- |
+| **Physical GPU** | NVIDIA T4 (16GB VRAM) | NVIDIA L4 (24GB VRAM) | NVIDIA T4 / A10G (16–24GB) |
+| **Compute Capability** | Turing (SM 7.5) | Ada Lovelace (SM 8.9) | Turing / Ampere |
+| **Quantization Kernel** | AWQ Classic (FP16) | AWQ Marlin (BF16) | AWQ Classic (FP16) |
+| **Base Weights (4-bit)**| 5.6 GB VRAM | 5.6 GB VRAM | 5.6 GB VRAM |
+| **LoRA Adapters (x2)** | 150 MB VRAM | 150 MB VRAM | 150 MB VRAM |
+| **KV Cache Headroom** | ~8.8 GB VRAM | ~16.7 GB VRAM | ~8.8–16.0 GB VRAM |
+| **Max Context / Concurrency** | 4,096 tokens / 8 seqs | 8,192 tokens / 16 seqs | 4,096 tokens / 8 seqs |
+| **Monthly Compute Cost** | ~$380 / month | ~$410 / month | ~$390 / month |
+

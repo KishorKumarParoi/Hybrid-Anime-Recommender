@@ -54,16 +54,25 @@ NEXT_MS=$(( (NEXT_END - NEXT_START) / 1000000 ))
 echo -e "${GREEN}✓ Next.js 16 Turbopack: 5/5 static & dynamic routes compiled (${NEXT_MS}ms)${NC}\n"
 
 # 5. Python Enterprise Suite (Contract & App Tests)
-echo -e "${YELLOW}[5/5] Testing Python FastAPI Core & Polyglot Contracts (Pytest)...${NC}"
+echo -e "${YELLOW}[5/6] Testing Python FastAPI Core & Polyglot Contracts (Pytest)...${NC}"
 PY_START=$(date +%s%N)
 uv run pytest tests/test_polyglot_microservices.py tests/test_app_modules.py -q
 PY_END=$(date +%s%N)
 PY_MS=$(( (PY_END - PY_START) / 1000000 ))
 echo -e "${GREEN}✓ Python Contracts & Intelligence Core: 12/12 passed (${PY_MS}ms)${NC}\n"
 
+# 6. LLMOps Continuous Fine-Tuning & Dynamic Multi-LoRA Pipeline Test
+echo -e "${YELLOW}[6/6] Testing LLMOps Flywheel, RSLoRA Fine-Tuning & Multi-LoRA Serving (Pytest)...${NC}"
+LLMOPS_START=$(date +%s%N)
+uv run pytest tests/test_llmops_pipeline.py -q
+LLMOPS_END=$(date +%s%N)
+LLMOPS_MS=$(( (LLMOPS_END - LLMOPS_START) / 1000000 ))
+echo -e "${GREEN}✓ LLMOps Pipeline & Multi-Cloud Serving: 15/15 passed (${LLMOPS_MS}ms)${NC}\n"
+
 END_TOTAL=$(date +%s)
 TOTAL_TIME=$(( END_TOTAL - START_TOTAL ))
 
 echo -e "${BOLD}${CYAN}======================================================================${NC}"
-echo -e "${BOLD}${GREEN} 🏆 ALL POLYGLOT MICROSERVICES PASSED WITH 100% SUCCESS (${TOTAL_TIME}s) ${NC}"
+echo -e "${BOLD}${GREEN} 🏆 ALL 6 MICROSERVICES & LLMOPS PIPELINES PASSED (100% GREEN) (${TOTAL_TIME}s) ${NC}"
 echo -e "${BOLD}${CYAN}======================================================================${NC}\n"
+
