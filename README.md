@@ -18,6 +18,35 @@ A production-grade, globally distributed enterprise AI platform engineered to de
 
 ---
 
+## 🧭 Executive Documentation Navigator & Learning Paths
+
+| Document | Focus & Target Audience | Core Content & Topics Covered |
+| :--- | :--- | :--- |
+| **[Step-by-Step Learning Curriculum](docs/STEP_BY_STEP_LEARNING.md)** | Self-Paced Learners & Engineers | 6 pedagogical modules: Polyglot mesh, NCF/ChromaDB algorithms, RSLoRA math, dynamic vLLM serving, enterprise suite, and cloud bootstrap. |
+| **[Workflow Serialization & Data Journey](docs/WORKFLOW_SERIALIZATION.md)** | System Architects & Leads | Detailed request lifecycle tracing: client ingress $\to$ auth $\to$ SIMD scoring $\to$ telemetry flywheel $\to$ evaluation gates $\to$ vLLM multi-LoRA. |
+| **[System Design & Architecture Specification](docs/ARCHITECTURE.md)** | Lead Architects & Directors | Polyglot mechanical sympathy, multi-database persistence (Postgres, Mongo, Redis), Enterprise AI Suite (RAG, Saga, Outbox, Lakehouse, KMS). |
+| **[Principal Architect Portfolio](docs/PORTFOLIO_ARCHITECT.md)** | Executive Interviewers & Staff+ | 3 Reference architectures, ADR-001/002/003, STRIDE threat model, ISO 27001/SOC 2 mapping, 75% GPU cost optimization study, and P0 runbooks. |
+| **[Interview & Negotiation Playbook](docs/INTERVIEW_COMP_PLAYBOOK.md)** | Principal Candidates & Negotiators | 6-Step whiteboard system design protocol, 3 executive STAR stories, and senior total compensation (TC) negotiation frameworks. |
+
+---
+
+## 🌳 5-Tier GitOps Branching Model
+
+The repository adheres to an enterprise multi-branch promotion pipeline. All 5 branches are active and synchronized:
+
+```
+feature/*  ────────>  test  ────────>  dev  ────────>  stage  ────────>  prod / main
+(Atomic Work)      (Unit CI)      (Integration)    (Pre-Prod UAT)        (Live Production)
+```
+
+* **`feature/*`**: Individual developer branches for atomic features, hotfixes, or experiments.
+* **`test`**: Automated test execution branch running unified polyglot and contract test suites.
+* **`dev`**: Active integration branch where all 9 microservices are assembled and validated.
+* **`stage`**: Pre-production staging environment mirroring cloud Kubernetes clusters and GPU pools.
+* **`prod`** (and **`main`**): Release-grade production code tagged with semantic releases and verified Docker images.
+
+---
+
 ## 🏛️ End-to-End System Architecture
 
 ![System Architecture Overview](docs/images/01_architecture_overview.jpg)
