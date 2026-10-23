@@ -9,16 +9,16 @@
 
 Follow this step-by-step curriculum to master the platform from mathematical foundations to cloud production:
 
-```mermaid
-flowchart LR
-    M0[Module 0: Foundations & Architecture] --> M1[Module 1: Polyglot Microservices]
-    M1 --> M2[Module 2: Vector Scoring & HNSW]
-    M2 --> M3[Module 3: Continuous LLMOps Flywheel]
-    M3 --> M4[Module 4: RSLoRA & NeFTune Math]
-    M4 --> M5[Module 5: Dynamic Multi-LoRA vLLM]
-    M5 --> M6[Module 6: Multi-Cloud GitOps]
-    M6 --> M7[Module 7: PyRIT AI Security]
-    M7 --> M8[Module 8: Principal Interview Prep]
+```
++-------------------------------------------------------------------------------------------------------------+
+|                                        CURRICULUM BLUEPRINT ROADMAP                                         |
++-------------------------------------------------------------------------------------------------------------+
+|  [ Module 0: Architecture ]  -->  [ Module 1: Polyglot Mesh ]     -->  [ Module 2: Vector Scoring & HNSW ]  |
+|                                                                                                             |
+|  [ Module 3: Continuous LLMOps ] --> [ Module 4: RSLoRA & NeFTune ] --> [ Module 5: Dynamic Multi-LoRA vLLM] |
+|                                                                                                             |
+|  [ Module 6: Multi-Cloud GitOps ] -> [ Module 7: PyRIT AI Security ] -> [ Module 8: Principal Interview ]   |
++-------------------------------------------------------------------------------------------------------------+
 ```
 
 ---

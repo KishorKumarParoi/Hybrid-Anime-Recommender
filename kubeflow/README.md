@@ -6,13 +6,25 @@ This directory contains the production Kubeflow Pipelines v2 implementation for 
 
 ## 🏛️ Pipeline Architecture & DAG Flow
 
-```mermaid
-graph TD
-    A[1. Ingest Raw Interactions<br/><code>data_ingestion_op</code>] --> B[2. Preprocess & Encode Features<br/><code>data_preprocessing_op</code>]
-    B --> C[3. Train RecommenderNet<br/><code>model_training_op</code>]
-    C --> D[4. Evaluate & Quality Gate<br/><code>model_evaluation_op</code>]
-    B -.->|Test Split| D
-    D -->|Passed Threshold| E[5. Rolling Deployment Rollover<br/><code>model_deployment_op</code>]
+```
++-------------------------------------------------------------------------------------------------------+
+|                                    KUBEFLOW KFP v2 DAG PIPELINE FLOW                                  |
++-------------------------------------------------------------------------------------------------------+
+|  [ 1. Ingest Raw Interactions ]                                                                       |
+|         data_ingestion_op                                                                             |
+|                 |                                                                                     |
+|                 v                                                                                     |
+|  [ 2. Preprocess & Encode Features ] ----------------------+                                          |
+|         data_preprocessing_op                              | (Test Split)                             |
+|                 |                                          |                                          |
+|                 v                                          v                                          |
+|  [ 3. Train RecommenderNet ]                       [ 4. Evaluate & Quality Gate ]                     |
+|         model_training_op  --------------------->         model_evaluation_op                        |
+|                                                            |                                          |
+|                                                            v (Passed Threshold)                       |
+|                                                    [ 5. Rolling Deployment Rollover ]                 |
+|                                                            model_deployment_op                        |
++-------------------------------------------------------------------------------------------------------+
 ```
 
 ---
