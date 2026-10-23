@@ -6,6 +6,12 @@ services:
       dockerfile: Dockerfile
     container_name: hybrid-anime-frontend
     restart: unless-stopped
+    mem_limit: 512m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
@@ -26,6 +32,12 @@ services:
       dockerfile: Dockerfile
     container_name: hybrid-anime-go-auth
     restart: unless-stopped
+    mem_limit: 128m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${GO_AUTH_PORT:-8081}:8081"
     environment:
@@ -46,6 +58,12 @@ services:
       dockerfile: Dockerfile
     container_name: hybrid-anime-express-interactions
     restart: unless-stopped
+    mem_limit: 256m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${EXPRESS_PORT:-8082}:8082"
     environment:
@@ -65,6 +83,12 @@ services:
       dockerfile: Dockerfile
     container_name: hybrid-anime-rust-scoring
     restart: unless-stopped
+    mem_limit: 128m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${RUST_PORT:-8083}:8083"
     environment:
@@ -80,6 +104,12 @@ services:
       dockerfile: app/Dockerfile
     container_name: hybrid-anime-fastapi
     restart: unless-stopped
+    mem_limit: 1024m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${FASTAPI_PORT:-8000}:8000"
     environment:
@@ -100,6 +130,12 @@ services:
     image: postgres:16-alpine
     container_name: hybrid-anime-postgres
     restart: unless-stopped
+    mem_limit: 512m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
@@ -116,6 +152,12 @@ services:
     image: mongo:7.0
     container_name: hybrid-anime-mongo
     restart: unless-stopped
+    mem_limit: 512m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${MONGO_PORT:-27017}:27017"
     environment:
@@ -132,6 +174,12 @@ services:
     image: redis:7-alpine
     container_name: hybrid-anime-redis
     restart: unless-stopped
+    mem_limit: 128m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -144,6 +192,12 @@ services:
     image: nginx:alpine
     container_name: hybrid-anime-nginx
     restart: unless-stopped
+    mem_limit: 64m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "${NGINX_PORT:-80}:80"
     volumes:

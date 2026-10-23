@@ -4,8 +4,10 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev && rm -rf /var/lib/apt/lists/*
 
+# Cost & Speed Optimization: Pre-install lightweight CPU PyTorch wheel (180MB vs 2.5GB CUDA)
 COPY app/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch && \
+    pip install --no-cache-dir -r requirements.txt
 
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || true
 ENV HF_HUB_OFFLINE=0

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   async rewrites() {
     return [
       // 1. Go Auth Microservice (Port 8081)

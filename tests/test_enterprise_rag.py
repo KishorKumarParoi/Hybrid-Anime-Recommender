@@ -162,17 +162,36 @@ def test_hybrid_rag_service():
     service.add_document("doc_1", "Steins;Gate psychological sci-fi time travel", {"genre": "Sci-Fi"})
     service.add_document("doc_2", "Death Note psychological supernatural mystery", {"genre": "Mystery"})
 
-    # Query RAG
+    # Query RAG (First Call: Cache Miss, Live Inference)
     res = service.query("time travel sci-fi", user_id="user_alpha_1")
     assert len(res.retrieved_documents) > 0
     assert res.retrieved_documents[0].rrf_score > 0.0
     assert res.model_variant in ["variant_a_baseline", "variant_b_finetuned"]
     assert res.estimated_cost_usd > 0.0
+    assert res.cache_hit is False
 
-    # Verify Cost Tracker
+    # Second Call: Semantic Cache Hit ($0.00 Token Cost, <1ms)
+    res_cached = service.query("time travel sci-fi", user_id="user_alpha_1")
+    assert res_cached.cache_hit is True
+    assert res_cached.estimated_cost_usd == 0.0
+    assert res_cached.answer == res.answer
+
+    # Third Call: Cache Bypass
+    res_bypass = service.query("time travel sci-fi", user_id="user_alpha_1", bypass_cache=True)
+    assert res_bypass.cache_hit is False
+    assert res_bypass.estimated_cost_usd > 0.0
+
+    # Verify Cost Tracker & Optimization Report
     summary = tracker.get_summary()
     assert res.model_variant in summary["by_model"]
-    assert summary["by_model"][res.model_variant]["requests"] == 1
+    assert summary["cache_hits"] >= 1
+    assert summary["total_saved_usd"] > 0.0
+
+    report = service.get_cost_optimization_report()
+    assert report["status"] == "healthy"
+    assert report["cache_metrics"]["cache_hits"] >= 1
+    assert report["financial_attribution"]["total_cost_saved_usd"] > 0.0
+    assert "alternative_options_analysis" in report
 
 
 # ─── 5. DISTRIBUTED PATTERNS: IDEMPOTENCY, OUTBOX & SAGA ──────────────────────
@@ -384,6 +403,14 @@ def test_api_metrics_and_governance():
     resp_cost = client.get("/api/v1/enterprise/metrics/cost-dashboard")
     assert resp_cost.status_code == 200
     assert "summary" in resp_cost.json()
+
+    # Cost Optimization & Speedup Analytics
+    resp_opt = client.get("/api/v1/enterprise/metrics/cost-optimization")
+    assert resp_opt.status_code == 200
+    assert "cache_metrics" in resp_opt.json()
+    assert "financial_attribution" in resp_opt.json()
+    assert "performance_impact" in resp_opt.json()
+    assert "alternative_options_analysis" in resp_opt.json()
 
     # Audit Trail
     resp_audit = client.get("/api/v1/enterprise/governance/audit-trail")

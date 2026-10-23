@@ -30,16 +30,26 @@ class VLLMClient:
         self.model_name = model_name or os.getenv("VLLM_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
         self.api_key = api_key or os.getenv("VLLM_API_KEY", "EMPTY")
         self.timeout = timeout
+        self._client: Optional[httpx.AsyncClient] = None
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Returns or creates a persistent HTTP client with connection pooling."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                timeout=self.timeout,
+                limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
+            )
+        return self._client
 
     async def check_health(self) -> Dict[str, Any]:
         """Check whether vLLM GPU server is accessible and serving models."""
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                resp = await client.get(f"{self.base_url}/models")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    models = [m.get("id") for m in data.get("data", [])]
-                    return {"online": True, "base_url": self.base_url, "models": models}
+            client = self._get_client()
+            resp = await client.get(f"{self.base_url}/models", timeout=3.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                models = [m.get("id") for m in data.get("data", [])]
+                return {"online": True, "base_url": self.base_url, "models": models}
         except Exception as exc:
             logger.debug(f"vLLM server check offline: {exc}")
         return {"online": False, "base_url": self.base_url, "models": []}
@@ -52,7 +62,7 @@ class VLLMClient:
         temperature: float = 0.7,
         top_p: float = 0.95
     ) -> Dict[str, Any]:
-        """Generate full completion using continuous batching."""
+        """Generate full completion using continuous batching with connection pooling."""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -70,19 +80,19 @@ class VLLMClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                resp = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    choice = data["choices"][0]
-                    content = choice["message"]["content"]
-                    usage = data.get("usage", {})
-                    return {
-                        "status": "success",
-                        "engine": "vLLM-PagedAttention",
-                        "content": content,
-                        "usage": usage
-                    }
+            client = self._get_client()
+            resp = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                choice = data["choices"][0]
+                content = choice["message"]["content"]
+                usage = data.get("usage", {})
+                return {
+                    "status": "success",
+                    "engine": "vLLM-PagedAttention",
+                    "content": content,
+                    "usage": usage
+                }
         except Exception as exc:
             logger.warning(f"vLLM inference unreachable ({exc}). Falling back to multi-tier engine.")
 

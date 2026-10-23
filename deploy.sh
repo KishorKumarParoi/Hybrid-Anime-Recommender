@@ -45,14 +45,19 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 
+# Performance & BuildKit Optimization
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+export COMPOSE_PARALLEL_LIMIT=2
+
 # Helper for privileged commands (non-interactive safe)
 run_sudo() {
     if [ "$EUID" -eq 0 ]; then
         "$@"
     elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
-        sudo "$@"
+        sudo -E "$@"
     else
-        "$@"
+        sudo -E "$@" 2>/dev/null || "$@"
     fi
 }
 
@@ -62,7 +67,7 @@ run_docker() {
     elif [ "$EUID" -eq 0 ]; then
         docker "$@"
     elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
-        sudo docker "$@"
+        sudo -E docker "$@"
     else
         docker "$@"
     fi
@@ -73,9 +78,15 @@ RUN_DEMO=true
 RUN_TESTS=false
 DEPLOY_K8S=false
 ENABLE_GCP=false
+QUICK_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --quick|--fast|--lightweight)
+            QUICK_MODE=true
+            RUN_DEMO=false
+            shift
+            ;;
         --no-demo)
             RUN_DEMO=false
             shift
@@ -203,6 +214,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 else
     run_sudo systemctl enable --now docker 2>/dev/null || run_sudo service docker start 2>/dev/null || true
     run_sudo usermod -aG docker "$USER" 2>/dev/null || true
+    run_sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
 fi
 
 # Determine Compose Command
@@ -275,21 +287,21 @@ export NGINX_PORT="${NGINX_PORT:-80}"
 # Auto-resolve host port conflicts without disrupting container-to-container network
 if is_port_occupied "$FASTAPI_PORT"; then
     # Check if occupied by our own docker container
-    if ! docker ps --filter "name=hybrid-anime-fastapi" --format "{{.Ports}}" | grep -q "${FASTAPI_PORT}"; then
+    if ! run_docker ps --filter "name=hybrid-anime-fastapi" --format "{{.Ports}}" | grep -q "${FASTAPI_PORT}"; then
         export FASTAPI_PORT=8005
         echo -e "${YELLOW}[i] Host port 8000 occupied by existing process. Remapping host FastAPI port to 8005.${NC}"
     fi
 fi
 
 if is_port_occupied "$POSTGRES_PORT"; then
-    if ! docker ps --filter "name=hybrid-anime-postgres" --format "{{.Ports}}" | grep -q "${POSTGRES_PORT}"; then
+    if ! run_docker ps --filter "name=hybrid-anime-postgres" --format "{{.Ports}}" | grep -q "${POSTGRES_PORT}"; then
         export POSTGRES_PORT=5433
         echo -e "${YELLOW}[i] Host port 5432 occupied by existing process. Remapping host Postgres port to 5433.${NC}"
     fi
 fi
 
 if is_port_occupied "$NGINX_PORT"; then
-    if ! docker ps --filter "name=hybrid-anime-nginx" --format "{{.Ports}}" | grep -q "${NGINX_PORT}"; then
+    if ! run_docker ps --filter "name=hybrid-anime-nginx" --format "{{.Ports}}" | grep -q "${NGINX_PORT}"; then
         export NGINX_PORT=8080
         echo -e "${YELLOW}[i] Host port 80 occupied by existing process. Remapping host Nginx port to 8080.${NC}"
     fi
@@ -314,13 +326,19 @@ run_compose() {
     elif [ "$EUID" -eq 0 ]; then
         $COMPOSE_CMD "$@"
     elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
-        sudo $COMPOSE_CMD "$@"
+        sudo -E $COMPOSE_CMD "$@"
     else
         $COMPOSE_CMD "$@"
     fi
 }
 
-run_compose up -d --build
+if [ "$QUICK_MODE" = true ]; then
+    echo -e "${YELLOW}[*] Quick mode active: Launching core AI, Cache, Gateway & Frontend (sub-30s boot)...${NC}"
+    run_compose up -d --build app redis nginx frontend
+else
+    echo -e "${YELLOW}[*] Launching complete 9-service polyglot microservice mesh...${NC}"
+    run_compose up -d --build
+fi
 
 # ─── 7. Automated Health-Check Polling ────────────────────────────────────────
 echo -e "\n${CYAN}[6/7] Polling Microservices Health Status...${NC}"

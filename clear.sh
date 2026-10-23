@@ -42,9 +42,9 @@ run_sudo() {
     if [ "$EUID" -eq 0 ]; then
         "$@"
     elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
-        sudo "$@"
+        sudo -E "$@"
     else
-        "$@"
+        sudo -E "$@" 2>/dev/null || "$@"
     fi
 }
 
@@ -54,7 +54,7 @@ run_docker() {
     elif [ "$EUID" -eq 0 ]; then
         docker "$@"
     elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
-        sudo docker "$@"
+        sudo -E docker "$@"
     else
         docker "$@"
     fi
@@ -82,7 +82,7 @@ run_compose() {
     elif [ "$EUID" -eq 0 ]; then
         $COMPOSE_CMD "$@"
     elif command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
-        sudo $COMPOSE_CMD "$@"
+        sudo -E $COMPOSE_CMD "$@"
     else
         $COMPOSE_CMD "$@"
     fi
