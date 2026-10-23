@@ -242,3 +242,29 @@ feature/*  ────────>  test  ────────>  dev  ─�
 | **Max Context / Concurrency** | 4,096 tokens / 8 seqs | 8,192 tokens / 16 seqs | 4,096 tokens / 8 seqs |
 | **Monthly Compute Cost** | ~$380 / month | ~$410 / month | ~$390 / month |
 
+---
+
+## 10. Enterprise AI Platform Suite (`src/enterprise/`)
+
+```
++------------------------------------------------------------------------------------+
+|                         ENTERPRISE AI PLATFORM SUITE                               |
++------------------------------------------------------------------------------------+
+| 1. Guardrails & PII   | Reversible PII Vault + Canary Delimiter + Shannon Entropy  |
+| 2. G-Eval Harness     | 5-Dimension LLM-as-a-Judge + Token & Micro-Cent Attribution|
+| 3. Production RAG     | Hybrid Dense + Sparse BM25 + Reciprocal Rank Fusion (k=60) |
+| 4. Distributed Systems| Kafka Event Stream, CQRS, Saga Orchestrator, Outbox Pattern|
+| 5. Lakehouse Tier     | Medallion Bronze/Silver/Gold on Delta/Iceberg + SLAs       |
+| 6. Zero-Trust Security| KMS Envelope Encryption (AES-256-GCM), RLS, Tamper Audit   |
++------------------------------------------------------------------------------------+
+```
+
+### Production Endpoints
+- `POST /api/v1/enterprise/rag/query`: Hybrid dense+sparse RAG with deterministic A/B testing and cost tracking.
+- `POST /api/v1/enterprise/eval/g-eval`: G-Eval style 5-dimension rubric evaluator for LLM outputs.
+- `POST /api/v1/enterprise/saga/deploy-model`: Distributed Saga transaction for zero-downtime model rollouts.
+- `GET /api/v1/enterprise/metrics/cost-dashboard`: Real-time token usage, cost attribution, and A/B metrics.
+- `GET /api/v1/enterprise/governance/audit-trail`: Cryptographically chained HMAC-SHA256 audit log.
+- `GET /api/v1/enterprise/lakehouse/tables`: Medallion Lakehouse table metadata and freshness SLA status.
+
+

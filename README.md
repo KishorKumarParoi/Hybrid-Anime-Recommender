@@ -333,45 +333,63 @@ When defending this architecture in executive, principal, or senior staff techni
 
 ---
 
-## 🚀 Quickstart & Verification Runbook
+## 🚀 One-Click Cloud & Workstation Deployment (`./deploy.sh`)
 
-### 1. Prerequisites
-Ensure `uv` is installed:
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+The platform is 100% portable and deployable via a single script on any fresh AWS EC2 instance (Ubuntu, Debian, Amazon Linux), Google Cloud VM, Azure VM, or local macOS workstation directly after `git clone`:
 
-### 2. Environment Setup
 ```bash
-# Clone and sync dependencies
+# Step 1: Clone Repository
 git clone https://github.com/KishorKumarParoi/Hybrid-Anime-Recommender.git
 cd Hybrid-Anime-Recommender
-uv sync
+
+# Step 2: One-Click End-to-End Deployment
+chmod +x deploy.sh clear.sh
+./deploy.sh
 ```
 
-### 3. Run the Unified Polyglot & LLMOps Test Suite (6 Stages)
-Executes Rust SIMD tests, Go auth tests, Express interaction tests, Next.js build validation, Python contracts, and LLMOps fine-tuning tests:
+### What `./deploy.sh` Automates Automatically:
+1. **Public IP & Topology Discovery**: Probes AWS IMDSv2/IMDSv1 or external DNS to discover host routing IP.
+2. **Automated Toolchain Bootstrap**: Installs Docker Engine, Docker Compose v2, `uv`, and Python 3.12 without interactive prompts.
+3. **macOS Daemon Auto-Launch**: Auto-detects if Docker Desktop is stopped and launches it.
+4. **Port Conflict Auto-Remapper**: Dynamically binds external ports (e.g., PostgreSQL 5432 $\to$ 5433, FastAPI 8000 $\to$ 8005) if host processes occupy defaults, preserving container-to-container internal networking.
+5. **Polyglot Mesh Orchestration**: Builds and boots all 9 containers (Next.js 16, Go Auth, Express Interactions, Rust SIMD, FastAPI AI, PostgreSQL, MongoDB, Redis, NGINX).
+6. **Automated Health Probes**: Polls all microservices and enterprise endpoints until 100% operational.
+7. **Continuous LLMOps Verification**: Runs automated PII scrubbing, RSLoRA training, quality gating, and dynamic multi-LoRA serving.
+
+### Enterprise Service Endpoints:
+* **Web Platform (NGINX Edge)**: `http://<SERVER_IP>:80`
+* **Next.js 16 Glassmorphism UI**: `http://<SERVER_IP>:3000`
+* **FastAPI AI Intelligence & Docs**: `http://<SERVER_IP>:8000/docs`
+* **Enterprise RAG & Cost Metrics**: `http://<SERVER_IP>:8000/api/v1/enterprise/metrics/cost-dashboard`
+* **Governance Audit Trail**: `http://<SERVER_IP>:8000/api/v1/enterprise/governance/audit-trail`
+* **Lakehouse Tables & Freshness SLAs**: `http://<SERVER_IP>:8000/api/v1/enterprise/lakehouse/tables`
+* **Go Authentication Service**: `http://<SERVER_IP>:8081/auth/health`
+* **Express Interactions Service**: `http://<SERVER_IP>:8082/health`
+* **Rust SIMD Scoring Engine**: `http://<SERVER_IP>:8083/health`
+
+### Zero-Cost Full Teardown (`./clear.sh`):
+```bash
+./clear.sh
+```
+Stops and deletes all Docker containers, networks, and volumes, terminates background Python processes, and frees all reserved ports, leaving the machine in a 100% pristine zero-resource state ($0.00/hr).
+
+---
+
+## 🧪 Developer Verification & Manual Execution Runbook
+
+### 1. Run the Complete 7-Stage Test Suite
+Executes Rust SIMD tests, Go auth tests, Express interaction tests, Next.js build validation, Python contracts, LLMOps fine-tuning, and Enterprise RAG tests:
 ```bash
 ./scripts/test_all.sh
 ```
 
-### 4. Run the Complete End-to-End Demonstration Script
-Executes Data Curation -> RSLoRA Training -> Quality Gating -> Dynamic Multi-LoRA Serving in a single command:
+### 2. Run the End-to-End LLMOps Verification Script
+Executes Data Curation $\to$ RSLoRA Training $\to$ Quality Gating $\to$ Dynamic Multi-LoRA Serving in a single command:
 ```bash
 uv run python scripts/demo_end_to_end.py
 ```
 
-### 5. Launch the Local Polyglot Service Mesh (5 Services)
-```bash
-./scripts/run_all.sh
-```
-* **Next.js 16 UI**: [http://localhost:3000](http://localhost:3000)
-* **Python FastAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-* **Go Auth Service**: `http://localhost:8081/health`
-* **Express Interactions**: `http://localhost:8082/health`
-* **Rust SIMD Scoring**: `http://localhost:8083/health`
-
-### 6. Dynamic Multi-LoRA CLI Inference
+### 3. Dynamic Multi-LoRA CLI Inference
 ```bash
 # Query the analytical critic adapter
 uv run python -m llmops.client.multilora_client \

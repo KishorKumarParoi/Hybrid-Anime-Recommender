@@ -188,8 +188,22 @@ if ! command -v docker &>/dev/null; then
 fi
 
 # Ensure docker daemon is active
-run_sudo systemctl enable --now docker 2>/dev/null || run_sudo service docker start 2>/dev/null || true
-run_sudo usermod -aG docker "$USER" 2>/dev/null || true
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    if ! docker info &>/dev/null; then
+        echo -e "${YELLOW}[+] Docker daemon not responding on macOS. Launching Docker Desktop...${NC}"
+        open -a Docker 2>/dev/null || true
+        for i in {1..30}; do
+            if docker info &>/dev/null; then
+                echo -e "${GREEN}[✓] Docker Desktop daemon is active!${NC}"
+                break
+            fi
+            sleep 2
+        done
+    fi
+else
+    run_sudo systemctl enable --now docker 2>/dev/null || run_sudo service docker start 2>/dev/null || true
+    run_sudo usermod -aG docker "$USER" 2>/dev/null || true
+fi
 
 # Determine Compose Command
 COMPOSE_CMD=""
@@ -236,17 +250,62 @@ echo -e "${GREEN}[✓] uv toolchain ready: $(uv --version)${NC}"
 echo "[+] Syncing Python dependencies via uv..."
 uv sync --quiet || true
 
+# ─── Port Collision Resolution (Host Port Check) ──────────────────────────────
+is_port_occupied() {
+    local p="$1"
+    if command -v lsof &>/dev/null; then
+        lsof -ti ":${p}" &>/dev/null
+    elif command -v fuser &>/dev/null; then
+        fuser "${p}/tcp" &>/dev/null
+    else
+        return 1
+    fi
+}
+
+export FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+export GO_AUTH_PORT="${GO_AUTH_PORT:-8081}"
+export EXPRESS_PORT="${EXPRESS_PORT:-8082}"
+export RUST_PORT="${RUST_PORT:-8083}"
+export FASTAPI_PORT="${FASTAPI_PORT:-8000}"
+export POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+export MONGO_PORT="${MONGO_PORT:-27017}"
+export REDIS_PORT="${REDIS_PORT:-6379}"
+export NGINX_PORT="${NGINX_PORT:-80}"
+
+# Auto-resolve host port conflicts without disrupting container-to-container network
+if is_port_occupied "$FASTAPI_PORT"; then
+    # Check if occupied by our own docker container
+    if ! docker ps --filter "name=hybrid-anime-fastapi" --format "{{.Ports}}" | grep -q "${FASTAPI_PORT}"; then
+        export FASTAPI_PORT=8005
+        echo -e "${YELLOW}[i] Host port 8000 occupied by existing process. Remapping host FastAPI port to 8005.${NC}"
+    fi
+fi
+
+if is_port_occupied "$POSTGRES_PORT"; then
+    if ! docker ps --filter "name=hybrid-anime-postgres" --format "{{.Ports}}" | grep -q "${POSTGRES_PORT}"; then
+        export POSTGRES_PORT=5433
+        echo -e "${YELLOW}[i] Host port 5432 occupied by existing process. Remapping host Postgres port to 5433.${NC}"
+    fi
+fi
+
+if is_port_occupied "$NGINX_PORT"; then
+    if ! docker ps --filter "name=hybrid-anime-nginx" --format "{{.Ports}}" | grep -q "${NGINX_PORT}"; then
+        export NGINX_PORT=8080
+        echo -e "${YELLOW}[i] Host port 80 occupied by existing process. Remapping host Nginx port to 8080.${NC}"
+    fi
+fi
+
 # ─── 6. Build & Launch Microservices via Docker Compose ───────────────────────
 echo -e "\n${CYAN}[5/7] Building & Launching Polyglot Microservices Mesh...${NC}"
-echo "    1. Next.js 16 Edge UI            (Port 3000)"
-echo "    2. Go 1.24 Authentication API    (Port 8081)"
-echo "    3. Node.js 22 Express API        (Port 8082)"
-echo "    4. Rust SIMD Vector Scoring      (Port 8083)"
-echo "    5. Python FastAPI AI Core        (Port 8000)"
-echo "    6. PostgreSQL 16 Relational DB   (Port 5432)"
-echo "    7. MongoDB 7.0 Document DB       (Port 27017)"
-echo "    8. Redis 7 In-Memory Cache       (Port 6379)"
-echo "    9. NGINX Reverse Proxy Gateway   (Port 80)"
+echo "    1. Next.js 16 Edge UI            (Port ${FRONTEND_PORT})"
+echo "    2. Go 1.24 Authentication API    (Port ${GO_AUTH_PORT})"
+echo "    3. Node.js 22 Express API        (Port ${EXPRESS_PORT})"
+echo "    4. Rust SIMD Vector Scoring      (Port ${RUST_PORT})"
+echo "    5. Python FastAPI AI Core        (Port ${FASTAPI_PORT})"
+echo "    6. PostgreSQL 16 Relational DB   (Port ${POSTGRES_PORT})"
+echo "    7. MongoDB 7.0 Document DB       (Port ${MONGO_PORT})"
+echo "    8. Redis 7 In-Memory Cache       (Port ${REDIS_PORT})"
+echo "    9. NGINX Reverse Proxy Gateway   (Port ${NGINX_PORT})"
 echo ""
 
 run_compose() {
@@ -285,11 +344,14 @@ check_endpoint() {
     return 0
 }
 
-check_endpoint "NGINX Edge Gateway"       "http://localhost:80/nginx-health"
-check_endpoint "Go Auth Microservice"     "http://localhost:8081/auth/health"
-check_endpoint "Express Interactions API" "http://localhost:8082/health"
-check_endpoint "Rust SIMD Vector Engine"  "http://localhost:8083/health"
-check_endpoint "FastAPI AI Intelligence"  "http://localhost:8000/health"
+check_endpoint "NGINX Edge Gateway"          "http://localhost:${NGINX_PORT}/nginx-health"
+check_endpoint "Go Auth Microservice"        "http://localhost:${GO_AUTH_PORT}/auth/health"
+check_endpoint "Express Interactions API"    "http://localhost:${EXPRESS_PORT}/health"
+check_endpoint "Rust SIMD Vector Engine"     "http://localhost:${RUST_PORT}/health"
+check_endpoint "FastAPI AI Intelligence"     "http://localhost:${FASTAPI_PORT}/health"
+check_endpoint "Enterprise Cost Dashboard"   "http://localhost:${FASTAPI_PORT}/api/v1/enterprise/metrics/cost-dashboard"
+check_endpoint "Enterprise Governance Audit" "http://localhost:${FASTAPI_PORT}/api/v1/enterprise/governance/audit-trail"
+check_endpoint "Lakehouse Delta/Iceberg"     "http://localhost:${FASTAPI_PORT}/api/v1/enterprise/lakehouse/tables"
 
 # ─── 8. Continuous LLMOps & Verification Demo ─────────────────────────────────
 if [ "$RUN_DEMO" = true ]; then
@@ -318,15 +380,17 @@ EOF
 echo -e "${NC}"
 
 echo -e "${BOLD}Enterprise Service Endpoints & Client Ingress:${NC}"
-echo -e "  🌐 Web Platform (NGINX Edge) : ${CYAN}http://${SERVER_PUBLIC_IP}:80${NC}"
-echo -e "  ⚛️  Next.js 16 Glassmorphism : ${CYAN}http://${SERVER_PUBLIC_IP}:3000${NC}"
-echo -e "  🧠 FastAPI AI Intelligence   : ${CYAN}http://${SERVER_PUBLIC_IP}:8000/docs${NC}"
-echo -e "  🔑 Go Authentication API     : ${CYAN}http://${SERVER_PUBLIC_IP}:8081/auth/health${NC}"
-echo -e "  💬 Express Interactions API  : ${CYAN}http://${SERVER_PUBLIC_IP}:8082/health${NC}"
-echo -e "  ⚡ Rust SIMD Vector Engine   : ${CYAN}http://${SERVER_PUBLIC_IP}:8083/health${NC}"
-echo -e "  🐘 PostgreSQL Database       : ${CYAN}${SERVER_PUBLIC_IP}:5432${NC}"
-echo -e "  🍃 MongoDB Document DB       : ${CYAN}${SERVER_PUBLIC_IP}:27017${NC}"
-echo -e "  ⚡ Redis Cache               : ${CYAN}${SERVER_PUBLIC_IP}:6379${NC}"
+echo -e "  🌐 Web Platform (NGINX Edge) : ${CYAN}http://${SERVER_PUBLIC_IP}:${NGINX_PORT}${NC}"
+echo -e "  ⚛️  Next.js 16 Glassmorphism : ${CYAN}http://${SERVER_PUBLIC_IP}:${FRONTEND_PORT}${NC}"
+echo -e "  🧠 FastAPI AI Intelligence   : ${CYAN}http://${SERVER_PUBLIC_IP}:${FASTAPI_PORT}/docs${NC}"
+echo -e "  📊 Enterprise RAG & Cost     : ${CYAN}http://${SERVER_PUBLIC_IP}:${FASTAPI_PORT}/api/v1/enterprise/metrics/cost-dashboard${NC}"
+echo -e "  🛡️  Governance Audit Trail    : ${CYAN}http://${SERVER_PUBLIC_IP}:${FASTAPI_PORT}/api/v1/enterprise/governance/audit-trail${NC}"
+echo -e "  🔑 Go Authentication API     : ${CYAN}http://${SERVER_PUBLIC_IP}:${GO_AUTH_PORT}/auth/health${NC}"
+echo -e "  💬 Express Interactions API  : ${CYAN}http://${SERVER_PUBLIC_IP}:${EXPRESS_PORT}/health${NC}"
+echo -e "  ⚡ Rust SIMD Vector Engine   : ${CYAN}http://${SERVER_PUBLIC_IP}:${RUST_PORT}/health${NC}"
+echo -e "  🐘 PostgreSQL Database       : ${CYAN}${SERVER_PUBLIC_IP}:${POSTGRES_PORT}${NC}"
+echo -e "  🍃 MongoDB Document DB       : ${CYAN}${SERVER_PUBLIC_IP}:${MONGO_PORT}${NC}"
+echo -e "  ⚡ Redis Cache               : ${CYAN}${SERVER_PUBLIC_IP}:${REDIS_PORT}${NC}"
 echo ""
 echo -e "${BOLD}Principal Engineer Verification Commands:${NC}"
 echo -e "  • Re-run LLMOps Flywheel Demo: ${YELLOW}uv run python scripts/demo_end_to_end.py${NC}"

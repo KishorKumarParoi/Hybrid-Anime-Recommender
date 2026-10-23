@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ─── 1. Next.js Latest (v16 Turbopack) Frontend ────────────────────────────
   frontend:
@@ -9,7 +7,7 @@ services:
     container_name: hybrid-anime-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -29,7 +27,7 @@ services:
     container_name: hybrid-anime-go-auth
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "${GO_AUTH_PORT:-8081}:8081"
     environment:
       - PORT=8081
       - JWT_SECRET=hybrid-anime-polyglot-secure-jwt-secret-key-2026
@@ -49,7 +47,7 @@ services:
     container_name: hybrid-anime-express-interactions
     restart: unless-stopped
     ports:
-      - "8082:8082"
+      - "${EXPRESS_PORT:-8082}:8082"
     environment:
       - PORT=8082
       - MONGODB_URI=mongodb://mongo_user:mongo_password@mongo:27017/anime_interactions?authSource=admin
@@ -68,7 +66,7 @@ services:
     container_name: hybrid-anime-rust-scoring
     restart: unless-stopped
     ports:
-      - "8083:8083"
+      - "${RUST_PORT:-8083}:8083"
     environment:
       - PORT=8083
       - RUST_LOG=info
@@ -83,7 +81,7 @@ services:
     container_name: hybrid-anime-fastapi
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${FASTAPI_PORT:-8000}:8000"
     environment:
       - PORT=8000
       - REDIS_HOST=redis
@@ -103,7 +101,7 @@ services:
     container_name: hybrid-anime-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       - POSTGRES_USER=anime_user
       - POSTGRES_PASSWORD=anime_password
@@ -119,7 +117,7 @@ services:
     container_name: hybrid-anime-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT:-27017}:27017"
     environment:
       - MONGO_INITDB_ROOT_USERNAME=mongo_user
       - MONGO_INITDB_ROOT_PASSWORD=mongo_password
@@ -135,7 +133,7 @@ services:
     container_name: hybrid-anime-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -147,7 +145,7 @@ services:
     container_name: hybrid-anime-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

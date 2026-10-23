@@ -312,6 +312,58 @@ The platform is designed for multi-cloud deployment with zero vendor lock-in acr
 
 ---
 
+---
+
+## 🛡️ Stage 9: Enterprise AI Governance, Guardrails & Distributed Transaction Lifecycle
+
+```
++-------------------------------------------------------------------------------------------------------------------------------+
+|                                      STAGE 9: ENTERPRISE AI PLATFORM ARCHITECTURE TRACE                                       |
++-------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                                                               |
+|   [ Inbound Client Prompt ]                                                                                                   |
+|               │                                                                                                               |
+|               ▼                                                                                                               |
+|   [ REVERSIBLE PII FILTER VAULT (`src/enterprise/guardrails.py`) ]                                                            |
+|         * Regex scanners detect email, phone, credit card, API key (`sk-...`), and IPv4.                                      |
+|         * Replaces tokens with cryptographically unique surrogate UUIDs: `[EMAIL_UUID_4a9b...]`.                               |
+|         * Persists reversible bidirectional mapping in encrypted vault.                                                       |
+|               │                                                                                                               |
+|               ▼                                                                                                               |
+|   [ PROMPT INJECTION DEFENSE ENGINE ]                                                                                         |
+|         * Canary Token Injection: Embeds signed `__CANARY_UUID__` hidden inside system instructions.                           |
+|         * Delimiter Sandwiching: Encapsulates untrusted input in `<user_untrusted_input>` XML tags.                           |
+|         * Shannon Entropy Anomaly Detection: Calculates character entropy H(X). Rejects payloads with H(X) > 4.8.             |
+|               │                                                                                                               |
+|               ▼                                                                                                               |
+|   [ DETERMINISTIC A/B TEST ROUTER (`src/enterprise/rag_service.py`) ]                                                         |
+|         * Deterministic SHA-256 Modulo Routing on `user_id` / `query_hash`.                                                   |
+|         * Variant A (50%): Dense Vector Search (ChromaDB HNSW embeddings).                                                    |
+|         * Variant B (50%): Hybrid Search = Dense Vector + Sparse BM25 via Reciprocal Rank Fusion (k=60):                      |
+|                            RRF_Score(d) = SUM( 1 / (60 + rank_m(d)) )                                                         |
+|               │                                                                                                               |
+|               ▼                                                                                                               |
+|   [ G-EVAL LLM-AS-A-JUDGE EVALUATION HARNESS (`src/enterprise/eval_harness.py`) ]                                              |
+|         * 5-Dimension Rubric: Faithfulness, Relevancy, Context Recall, Hallucination (inverted), Safety (0.0 to 1.0).        |
+|         * Enforces automated CI/CD gating: Composite Score >= 0.85.                                                           |
+|         * Real-time Token & Cost Attribution ($0.59/1M prompt, $0.79/1M completion).                                          |
+|               │                                                                                                               |
+|               ▼                                                                                                               |
+|   [ TRANSACTIONAL OUTBOX & SAGA ORCHESTRATOR (`src/enterprise/patterns.py`) ]                                                |
+|         * Atomically persists domain mutations & outbox event in a single database transaction.                               |
+|         * Exactly-once publishing to Kafka (`anime.interactions.v1`, `anime.research.v1`).                                    |
+|         * Saga Orchestrator executes distributed transactions with reverse-order compensating rollbacks (LIFO).                |
+|               │                                                                                                               |
+|               ▼                                                                                                               |
+|   [ SECURITY, ENVELOPE ENCRYPTION & AUDIT TRAIL (`src/enterprise/security.py`) ]                                              |
+|         * Row-Level Security (RLS) Tenant Isolation (`WHERE tenant_id = :current_tenant`).                                    |
+|         * KMS Envelope Encryption (AES-256-GCM data key wrapped by master key).                                              |
+|         * Cryptographic HMAC-SHA256 Audit Trail Chaining (`prev_hash` linking ensures tamper-evidence).                       |
++-------------------------------------------------------------------------------------------------------------------------------+
+```
+
+---
+
 ## 🎓 Principal Engineer Interview Defense Cheat-Sheet
 
 When defending this architecture in Senior Staff or Principal Engineer interviews, use these authoritative responses:
@@ -337,3 +389,26 @@ When defending this architecture in Senior Staff or Principal Engineer interview
 
 ### Q5: "How do you ensure zero-downtime EC2 and cloud portability?"
 > **Defense:** "Our deployment architecture is 100% cloud-agnostic. Running `./deploy.sh` auto-detects system dependencies (Debian/Ubuntu, Amazon Linux, macOS), installs Docker and `uv` idempotently, constructs isolated network bridges, and performs health-check polling before routing traffic. Teardown via `./clear.sh` guarantees zero orphaned volumes, freeing all host ports and cloud billing resources immediately."
+
+### Q6: "How does your Hybrid RAG combine Dense Vector and Sparse Lexical search?"
+> **Defense:** "Pure vector retrieval struggles with exact keyword queries (anime titles, studio acronyms, character names), while pure BM25 fails to capture abstract conceptual semantics. Our Hybrid RAG executes both retrievers concurrently and combines the ranked candidate sets using Reciprocal Rank Fusion (RRF) with constant $k=60$:
+> $$\text{RRF Score}(d) = \sum_{m \in \{\text{dense}, \text{sparse}\}} \frac{1}{60 + \text{rank}_m(d)}$$
+> RRF eliminates the need to normalize raw score distributions across disparate algorithms. An A/B testing router deterministically partitions incoming traffic via SHA-256 modulo hashing, tracking token costs and latency across variants in real time."
+
+### Q7: "How do you guarantee exactly-once publishing to Kafka and handle distributed failures?"
+> **Defense:** "We implement the **Transactional Outbox pattern**: business state changes and outbox event records are committed together in a single atomic database transaction. An asynchronous background poller reads unprocessed outbox records, publishes them to Kafka with partition key idempotency, and marks them published only upon ACK receipt.
+> For distributed multi-service operations (such as model registration and traffic migration), our **Saga Orchestrator** manages execution across steps. If an intermediate step fails, compensating actions are executed in reverse order (LIFO) to guarantee eventual consistency."
+
+### Q8: "What is your defense against prompt injection and PII leakage?"
+> **Defense:** "We implement defense-in-depth at the prompt gateway:
+> 1. **Reversible PII Filter Vault**: Scrubs emails, phone numbers, credit cards, and API keys before prompt serialization, storing surrogate UUIDs in an encrypted vault for downstream restoration.
+> 2. **Canary Token Delimiting**: Injects cryptographically signed canary tokens between system prompts and untrusted user input using XML sandwiching (`<user_untrusted_input>`). Leaking the canary token triggers an immediate block.
+> 3. **Shannon Entropy Anomaly Detection**: Calculates character entropy $H(X)$; adversarial GCG suffixes exhibit high-entropy distributions ($H(X) > 4.8$) and are blocked pre-inference."
+
+### Q9: "How is data managed in the Lakehouse with Feature Freshness SLAs?"
+> **Defense:** "We adopt a Medallion Lakehouse architecture built on Apache Iceberg and Delta Lake:
+> - **Bronze Tier**: Append-only streaming ingestion capturing raw Kafka events.
+> - **Silver Tier**: Deduplicated, validated, PII-scrubbed records with ACID time-travel capabilities.
+> - **Gold Tier**: Aggregated user-anime latent feature vectors and training-ready datasets.
+> Our `FeatureFreshnessSLA` monitor continuously inspects ingestion timestamps against strict SLAs ($< 5\text{ min}$ for real-time recommendations, $< 1\text{ hr}$ for batch catalog updates), issuing alerts if pipelines fall behind."
+
