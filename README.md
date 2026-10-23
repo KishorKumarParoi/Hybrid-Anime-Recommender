@@ -362,28 +362,31 @@ When defending this architecture in executive, principal, or senior staff techni
 
 ---
 
-## 🚀 One-Click Cloud & Workstation Deployment (`./deploy.sh`)
+## 🚀 Zero-Touch Instant Cloud & Workstation Deployment
 
-The platform is 100% portable and deployable via a single script on any fresh AWS EC2 instance (Ubuntu, Debian, Amazon Linux), Google Cloud VM, Azure VM, or local macOS workstation directly after `git clone`:
+The entire platform can be deployed on **any fresh, blank AWS EC2 instance, cloud VM, or local machine with a single terminal command**:
 
 ```bash
-# Step 1: Clone Repository
-git clone https://github.com/KishorKumarParoi/Hybrid-Anime-Recommender.git
-cd Hybrid-Anime-Recommender
-
-# Step 2: One-Click End-to-End Deployment
-chmod +x deploy.sh clear.sh
-./deploy.sh
+curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash
 ```
 
-### What `./deploy.sh` Automates Automatically:
-1. **Public IP & Topology Discovery**: Probes AWS IMDSv2/IMDSv1 or external DNS to discover host routing IP.
-2. **Automated Toolchain Bootstrap**: Installs Docker Engine, Docker Compose v2, `uv`, and Python 3.12 without interactive prompts.
-3. **macOS Daemon Auto-Launch**: Auto-detects if Docker Desktop is stopped and launches it.
-4. **Port Conflict Auto-Remapper**: Dynamically binds external ports (e.g., PostgreSQL 5432 $\to$ 5433, FastAPI 8000 $\to$ 8005) if host processes occupy defaults, preserving container-to-container internal networking.
-5. **Polyglot Mesh Orchestration**: Builds and boots all 9 containers (Next.js 16, Go Auth, Express Interactions, Rust SIMD, FastAPI AI, PostgreSQL, MongoDB, Redis, NGINX).
-6. **Automated Health Probes**: Polls all microservices and enterprise endpoints until 100% operational.
-7. **Continuous LLMOps Verification**: Runs automated PII scrubbing, RSLoRA training, quality gating, and dynamic multi-LoRA serving.
+### What This Single Command Automates:
+1. **OS & Prerequisite Detection**: Checks if `git`, `curl`, and build tools are present; automatically installs them if missing (Ubuntu, Debian, Amazon Linux 2023, RHEL, macOS).
+2. **OOM Protection & Auto-Swap**: Detects available RAM; if RAM $< 4\text{GB}$ (e.g. `t3.micro`, `t2.small`), it automatically allocates a **4GB swapfile** to prevent compiler/Docker Out-Of-Memory crashes.
+3. **Automated Repository Synchronization**: Clones or updates `Hybrid-Anime-Recommender` into the local directory.
+4. **Toolchain Auto-Bootstrap**: Installs Docker Engine, Docker Compose v2, `uv`, and Python 3.12 without interactive prompts.
+5. **Self-Healing Port Remapping**: If local host ports (5432, 8000, 80) are occupied, it automatically shifts host port bindings to free ports (5433, 8005, 8080) without breaking internal microservice networks.
+6. **Polyglot Mesh Orchestration**: Compiles and launches all 9 containerized services.
+7. **Automated Health Gating & LLMOps Verification**: Probes all microservices and executes the complete data curation, RSLoRA, and multi-LoRA serving verification cycle.
+
+### Alternative: Manual Clone & Run
+If you already have `git` installed and prefer cloning manually:
+```bash
+git clone https://github.com/KishorKumarParoi/Hybrid-Anime-Recommender.git
+cd Hybrid-Anime-Recommender
+chmod +x deploy.sh clear.sh bootstrap.sh
+./deploy.sh
+```
 
 ### Enterprise Service Endpoints:
 * **Web Platform (NGINX Edge)**: `http://<SERVER_IP>:80`
