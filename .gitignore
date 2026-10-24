@@ -48,6 +48,8 @@ node_modules/
 target/
 Cargo.lock
 
+IMG*.jpg
+
 # Services
 services/go-auth-service/go-auth-service
 Complete-*

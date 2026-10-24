@@ -253,3 +253,18 @@ def build_graph(config: Config):
     )
 
     return workflow.compile()
+
+
+# Export Deep Multi-Agent Mesh components
+try:
+    from app.deep_agents import (
+        build_deep_agent_graph,
+        deep_agent_mesh,
+        DeepAnimeAgentState,
+        AnimeCandidate,
+        PersonaProfile,
+        CriticEvaluation,
+        CTODecision,
+    )
+except ImportError:
+    pass

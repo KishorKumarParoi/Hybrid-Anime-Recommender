@@ -229,3 +229,14 @@ def build_langgraph_pipeline(max_iterations: int = 2):
     )
 
     return workflow.compile()
+
+
+# Export Deep Multi-Agent Mesh
+try:
+    from app.deep_agents import (
+        build_deep_agent_graph,
+        deep_agent_mesh,
+        DeepAnimeAgentState,
+    )
+except ImportError:
+    pass

@@ -15,6 +15,7 @@ A production-grade, globally distributed enterprise AI platform engineered to de
 4. **Dynamic Multi-LoRA Serving on vLLM**: Hosting multiple domain-specific adapters (`anime-critic`, `anime-stylist`) alongside a frozen 4-bit foundation on a **single GPU** with sub-millisecond in-flight routing, reducing cloud compute costs by **75–87.5%**.
 5. **Multi-Cloud Kubernetes & GitOps**: Production manifests and Terraform automation across **Azure (AKS)**, **Google Cloud (GKE)**, and **Amazon Web Services (EKS)** with DCGM GPU telemetry.
 6. **AI Security Defense-in-Depth**: Microsoft PyRIT automated red teaming, jailbreak resistance, and adversarial prompt injection mitigation.
+7. **Industrial Deep Multi-Agent Mesh & CTO Governance**: LangGraph state machines (`32_Agentic_RAG_Project` & `AI_Security_Production_App` style), dynamic DAG formulation, zero-trust guardrails, hybrid RRF dense/sparse discovery, self-reflective quality critic loopback (<75 score query rewrite), and Chief Taste Officer (CTO) Human-in-the-Loop break-glass gates.
 
 ---
 
@@ -22,6 +23,7 @@ A production-grade, globally distributed enterprise AI platform engineered to de
 
 | Document | Focus & Target Audience | Core Content & Topics Covered |
 | :--- | :--- | :--- |
+| **[Deep Multi-Agent Mesh Specification](docs/DEEP_AGENT_MESH.md)** | AI Agents & LLMOps Leads | 7-Node LangGraph State Machine, reflection loop engineering, CTO gate & HITL break-glass tokens (`/api/v1/deep-agents/`). |
 | **[Step-by-Step Learning Curriculum](docs/STEP_BY_STEP_LEARNING.md)** | Self-Paced Learners & Engineers | 6 pedagogical modules: Polyglot mesh, NCF/ChromaDB algorithms, RSLoRA math, dynamic vLLM serving, enterprise suite, and cloud bootstrap. |
 | **[Workflow Serialization & Data Journey](docs/WORKFLOW_SERIALIZATION.md)** | System Architects & Leads | Detailed request lifecycle tracing: client ingress $\to$ auth $\to$ SIMD scoring $\to$ telemetry flywheel $\to$ evaluation gates $\to$ vLLM multi-LoRA. |
 | **[System Design & Architecture Specification](docs/ARCHITECTURE.md)** | Lead Architects & Directors | Polyglot mechanical sympathy, multi-database persistence (Postgres, Mongo, Redis), Enterprise AI Suite (RAG, Saga, Outbox, Lakehouse, KMS). |

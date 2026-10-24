@@ -165,6 +165,7 @@ from app.routers.documents import router as documents_router
 from app.routers.streaming import router as streaming_router
 from app.routers.observability import router as observability_router
 from app.routers.enterprise_rag import router as enterprise_rag_router
+from app.routers.deep_agents import router as deep_agents_router
 
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -188,6 +189,7 @@ app.include_router(recommender_router, prefix="/api/v1")
 app.include_router(documents_router, prefix="/api/v1")
 app.include_router(streaming_router, prefix="/api/v1")
 app.include_router(observability_router, prefix="/api/v1")
+app.include_router(deep_agents_router)
 app.include_router(enterprise_rag_router)
 
 
