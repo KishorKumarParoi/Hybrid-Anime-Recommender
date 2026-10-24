@@ -7,6 +7,8 @@
 [![vLLM](https://img.shields.io/badge/vLLM-Dynamic%20Multi--LoRA-blueviolet?style=for-the-badge&logo=nvidia)](file:///Users/kishorkumarparoi/Desktop/Hybrid-Anime-Recommender/llmops/serving)
 [![Multi-Cloud](https://img.shields.io/badge/Multi--Cloud-AKS%20%7C%20GKE%20%7C%20EKS-orange?style=for-the-badge&logo=kubernetes)](file:///Users/kishorkumarparoi/Desktop/Hybrid-Anime-Recommender/terraform)
 [![AI Security](https://img.shields.io/badge/AI%20Security-PyRIT%20Red%20Teaming-red?style=for-the-badge&logo=shield)](file:///Users/kishorkumarparoi/Desktop/Hybrid-Anime-Recommender/src/security)
+[![Architecture: Specification](https://img.shields.io/badge/Architecture-Specification-8A2BE2?style=for-the-badge&logo=diagramsdotnet&logoColor=white)](ARCHITECTURE.md)
+[![Workflow: SVG Flow](https://img.shields.io/badge/Workflow-Interactive_SVG-00C7B7?style=for-the-badge&logo=vectorlogozone&logoColor=white)](docs/images/01_architecture_flow.svg)
 
 A production-grade, globally distributed enterprise AI platform engineered to demonstrate **Principal Engineer / Senior Staff** competencies across:
 1. **Hybrid Recommendation Architecture**: Dual-tower neural collaborative filtering, metadata cosine similarity, and ChromaDB HNSW dense vector search.
@@ -15,7 +17,9 @@ A production-grade, globally distributed enterprise AI platform engineered to de
 4. **Dynamic Multi-LoRA Serving on vLLM**: Hosting multiple domain-specific adapters (`anime-critic`, `anime-stylist`) alongside a frozen 4-bit foundation on a **single GPU** with sub-millisecond in-flight routing, reducing cloud compute costs by **75–87.5%**.
 5. **Multi-Cloud Kubernetes & GitOps**: Production manifests and Terraform automation across **Azure (AKS)**, **Google Cloud (GKE)**, and **Amazon Web Services (EKS)** with DCGM GPU telemetry.
 6. **AI Security Defense-in-Depth**: Microsoft PyRIT automated red teaming, jailbreak resistance, and adversarial prompt injection mitigation.
-7. **Industrial Deep Multi-Agent Mesh & CTO Governance**: LangGraph state machines (`32_Agentic_RAG_Project` & `AI_Security_Production_App` style), dynamic DAG formulation, zero-trust guardrails, hybrid RRF dense/sparse discovery, self-reflective quality critic loopback (<75 score query rewrite), and Chief Taste Officer (CTO) Human-in-the-Loop break-glass gates.
+7. **Industrial Deep Multi-Agent Mesh & CTO Governance**: LangGraph state machines (`32_Agentic_RAG_Project` & `AI_Security_Production_App` style), dynamic DAG formulation, zero-trust guardrails, hybrid RRF dense/sparse discovery, self-reflective quality critic loopback (<75 score query rewrite), and Chief Taste Officer (CTO) Human-in-the-Loop break-glass gates. Full architecture blueprint in [ARCHITECTURE.md](ARCHITECTURE.md) and interactive vector flow in [01_architecture_flow.svg](docs/images/01_architecture_flow.svg).
+
+![Hybrid Anime Recommender Master Architecture Flow](docs/images/01_architecture_flow.svg)
 
 ---
 

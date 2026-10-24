@@ -191,7 +191,7 @@ for port in 80 3000 5000 8000 8081 8082 8083 5432 27017 6379; do
 done
 
 if [ "$ALL_CLEAR" = true ]; then
-    echo -e "\n${GREEN}${BOLD}✔ 100% Zero-Resource State Confirmed: No active processes, zero cost burn ($0.00/hr).${NC}\n"
+    echo -e "\n${GREEN}${BOLD}✔ 100% Zero-Resource State Confirmed: No active processes, zero cost burn (\$0.00/hr).${NC}\n"
 else
     echo -e "\n${YELLOW}Some external non-project processes may be using standard ports.${NC}\n"
 fi

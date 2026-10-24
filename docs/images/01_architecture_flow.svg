@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 660" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d"/>
+      <stop offset="100%" stop-color="#070a14"/>
+    </linearGradient>
+    <linearGradient id="uiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="agentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="hybridGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#065f46"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="loraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#581c87"/>
+      <stop offset="100%" stop-color="#6b21a8"/>
+    </linearGradient>
+    <linearGradient id="opsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9a3412"/>
+      <stop offset="100%" stop-color="#c2410c"/>
+    </linearGradient>
+
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrow-pink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f472b6"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#c084fc"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="660" fill="url(#bgGrad)"/>
+  <rect x="15" y="15" width="1170" height="630" rx="12" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+
+  <!-- Title Banner -->
+  <text x="40" y="55" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="700">Hybrid Anime Intelligence: Multi-Agent Mesh &amp; Dynamic Multi-LoRA Serving</text>
+  <text x="40" y="80" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13">Collaborative Filtering + Qdrant ANN, Dual-Tier Reranker, Deep Graph Agents, Dynamic LoRA Adapters &amp; Continuous LLMOps</text>
+
+  <!-- Tier 1: Client & Presentation Tier -->
+  <rect x="40" y="120" width="200" height="480" rx="10" fill="url(#uiGrad)" stroke="#334155" stroke-width="1.5"/>
+  <text x="55" y="155" fill="#38bdf8" font-family="sans-serif" font-size="14" font-weight="700">1. PRESENTATION TIER</text>
+
+  <rect x="55" y="175" width="170" height="85" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <text x="68" y="200" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Next.js 16 Frontend (:3000)</text>
+  <text x="68" y="218" fill="#94a3b8" font-family="sans-serif" font-size="11">Tailwind + Glassmorphism</text>
+  <text x="68" y="234" fill="#38bdf8" font-family="sans-serif" font-size="10">Real-time SSE token stream</text>
+  <text x="68" y="248" fill="#10b981" font-family="sans-serif" font-size="10">Dynamic anime gallery</text>
+
+  <rect x="55" y="275" width="170" height="85" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <text x="68" y="300" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">FastAPI AI Core (:8000)</text>
+  <text x="68" y="318" fill="#94a3b8" font-family="sans-serif" font-size="11">Async High-Throughput API</text>
+  <text x="68" y="334" fill="#a7f3d0" font-family="sans-serif" font-size="10">Pydantic v2 schemas</text>
+  <text x="68" y="348" fill="#38bdf8" font-family="sans-serif" font-size="10">OpenAPI Swagger at /docs</text>
+
+  <rect x="55" y="375" width="170" height="85" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <text x="68" y="400" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Polyglot Edge Services</text>
+  <text x="68" y="418" fill="#94a3b8" font-family="sans-serif" font-size="11">Go Auth Service (:8081)</text>
+  <text x="68" y="434" fill="#c084fc" font-family="sans-serif" font-size="10">Express Interactions (:8082)</text>
+  <text x="68" y="448" fill="#10b981" font-family="sans-serif" font-size="10">Rust SIMD Vectors (:8083)</text>
+
+  <rect x="55" y="475" width="170" height="105" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <text x="68" y="500" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Zero-Cost Teardown</text>
+  <text x="68" y="518" fill="#94a3b8" font-family="sans-serif" font-size="11">./clear.sh cleans all ports</text>
+  <text x="68" y="534" fill="#10b981" font-family="sans-serif" font-size="10">$0.00 idle active compute</text>
+  <text x="68" y="550" fill="#38bdf8" font-family="sans-serif" font-size="10">100% leak-proof verification</text>
+
+  <!-- Tier 2: Multi-Agent Deep Mesh Tier -->
+  <rect x="260" y="120" width="220" height="480" rx="10" fill="url(#agentGrad)" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="278" y="155" fill="#bfdbfe" font-family="sans-serif" font-size="14" font-weight="700">2. AGENT MESH &amp; GRAPH</text>
+
+  <rect x="275" y="175" width="190" height="85" rx="8" fill="#172554" stroke="#3b82f6" stroke-width="1"/>
+  <text x="288" y="200" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">LangGraph Supervisor</text>
+  <text x="288" y="218" fill="#bfdbfe" font-family="sans-serif" font-size="11">Cyclic FSM Orchestrator</text>
+  <text x="288" y="234" fill="#94a3b8" font-family="sans-serif" font-size="10">Dynamic task routing</text>
+  <text x="288" y="248" fill="#10b981" font-family="sans-serif" font-size="10">Postgres 16 Checkpointer</text>
+
+  <rect x="275" y="275" width="190" height="85" rx="8" fill="#172554" stroke="#3b82f6" stroke-width="1"/>
+  <text x="288" y="300" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Deep Reasoning Agents</text>
+  <text x="288" y="318" fill="#bfdbfe" font-family="sans-serif" font-size="11">Deep Loop &amp; CTO Agents</text>
+  <text x="288" y="334" fill="#94a3b8" font-family="sans-serif" font-size="10">Deconstructs complex plots</text>
+  <text x="288" y="348" fill="#38bdf8" font-family="sans-serif" font-size="10">Self-reflective refinement</text>
+
+  <rect x="275" y="375" width="190" height="85" rx="8" fill="#172554" stroke="#3b82f6" stroke-width="1"/>
+  <text x="288" y="400" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Model Context Protocol</text>
+  <text x="288" y="418" fill="#bfdbfe" font-family="sans-serif" font-size="11">FastMCP Server Tools</text>
+  <text x="288" y="434" fill="#94a3b8" font-family="sans-serif" font-size="10">Anime catalog tools</text>
+  <text x="288" y="448" fill="#c084fc" font-family="sans-serif" font-size="10">JSON-RPC over SSE</text>
+
+  <rect x="275" y="475" width="190" height="105" rx="8" fill="#172554" stroke="#3b82f6" stroke-width="1"/>
+  <text x="288" y="500" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">HITL Approval Gate</text>
+  <text x="288" y="518" fill="#bfdbfe" font-family="sans-serif" font-size="11">Break-glass human review</text>
+  <text x="288" y="534" fill="#ef4444" font-family="sans-serif" font-size="10">Content rating safety gate</text>
+  <text x="288" y="550" fill="#10b981" font-family="sans-serif" font-size="10">Admin override &amp; audit</text>
+
+  <!-- Tier 3: Hybrid Recommendation & Dual-Tier Reranker -->
+  <rect x="500" y="120" width="225" height="480" rx="10" fill="url(#hybridGrad)" stroke="#059669" stroke-width="1.5"/>
+  <text x="518" y="155" fill="#a7f3d0" font-family="sans-serif" font-size="14" font-weight="700">3. HYBRID RECOMMENDER</text>
+
+  <rect x="515" y="175" width="195" height="85" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+  <text x="528" y="200" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Collaborative + Content</text>
+  <text x="528" y="218" fill="#a7f3d0" font-family="sans-serif" font-size="11">Matrix Factorization (SVD)</text>
+  <text x="528" y="234" fill="#94a3b8" font-family="sans-serif" font-size="10">TF-IDF + Cosine Similarity</text>
+  <text x="528" y="248" fill="#38bdf8" font-family="sans-serif" font-size="10">Weighted Ensembling</text>
+
+  <rect x="515" y="275" width="195" height="85" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+  <text x="528" y="300" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Qdrant Vector ANN</text>
+  <text x="528" y="318" fill="#a7f3d0" font-family="sans-serif" font-size="11">HNSW Dense + BM25 Sparse</text>
+  <text x="528" y="334" fill="#94a3b8" font-family="sans-serif" font-size="10">Jina v3 Embeddings</text>
+  <text x="528" y="348" fill="#10b981" font-family="sans-serif" font-size="10">Sub-15ms ANN Retrieval</text>
+
+  <rect x="515" y="375" width="195" height="85" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+  <text x="528" y="400" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Dual-Tier Reranking</text>
+  <text x="528" y="418" fill="#a7f3d0" font-family="sans-serif" font-size="11">Tier 1: FlashRank ONNX</text>
+  <text x="528" y="434" fill="#94a3b8" font-family="sans-serif" font-size="10">Tier 2: Cohere Rerank v3.5</text>
+  <text x="528" y="448" fill="#c084fc" font-family="sans-serif" font-size="10">Precision Context Pruning</text>
+
+  <rect x="515" y="475" width="195" height="105" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+  <text x="528" y="500" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Semantic Cache (Redis)</text>
+  <text x="528" y="518" fill="#a7f3d0" font-family="sans-serif" font-size="11">Sub-50ms Exact Match</text>
+  <text x="528" y="534" fill="#94a3b8" font-family="sans-serif" font-size="10">Fuzzy cosine threshold &gt; 0.92</text>
+  <text x="528" y="550" fill="#10b981" font-family="sans-serif" font-size="10">68% Token Cost Reduction</text>
+
+  <!-- Tier 4: Dynamic Multi-LoRA Serving (vLLM) -->
+  <rect x="745" y="120" width="205" height="480" rx="10" fill="url(#loraGrad)" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="760" y="155" fill="#e9d5ff" font-family="sans-serif" font-size="14" font-weight="700">4. MULTI-LORA SERVING</text>
+
+  <rect x="755" y="175" width="185" height="85" rx="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"/>
+  <text x="768" y="200" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">vLLM Inference Core</text>
+  <text x="768" y="218" fill="#d8b4fe" font-family="sans-serif" font-size="11">PagedAttention Engine</text>
+  <text x="768" y="234" fill="#94a3b8" font-family="sans-serif" font-size="10">Continuous dynamic batching</text>
+  <text x="768" y="248" fill="#10b981" font-family="sans-serif" font-size="10">Base: Llama-3-8B-Instruct</text>
+
+  <rect x="755" y="275" width="185" height="85" rx="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"/>
+  <text x="768" y="300" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Dynamic Multi-LoRA</text>
+  <text x="768" y="318" fill="#d8b4fe" font-family="sans-serif" font-size="11">Character Persona Adapters</text>
+  <text x="768" y="334" fill="#94a3b8" font-family="sans-serif" font-size="10">Genre Style Adapters</text>
+  <text x="768" y="348" fill="#38bdf8" font-family="sans-serif" font-size="10">Zero GPU Reload Overhead</text>
+
+  <rect x="755" y="375" width="185" height="85" rx="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"/>
+  <text x="768" y="400" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">TensorZero Gateway</text>
+  <text x="768" y="418" fill="#d8b4fe" font-family="sans-serif" font-size="11">LLM Router &amp; Fallback</text>
+  <text x="768" y="434" fill="#94a3b8" font-family="sans-serif" font-size="10">A/B prompt experimentation</text>
+  <text x="768" y="448" fill="#10b981" font-family="sans-serif" font-size="10">Automated retry &amp; backoff</text>
+
+  <rect x="755" y="475" width="185" height="105" rx="8" fill="#3b0764" stroke="#a855f7" stroke-width="1"/>
+  <text x="768" y="500" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Multi-Cloud Deploy</text>
+  <text x="768" y="518" fill="#d8b4fe" font-family="sans-serif" font-size="11">AWS EKS / GCP GKE</text>
+  <text x="768" y="534" fill="#94a3b8" font-family="sans-serif" font-size="10">GPU node autoscale</text>
+  <text x="768" y="550" fill="#10b981" font-family="sans-serif" font-size="10">Karpenter spot cost cuts</text>
+
+  <!-- Tier 5: Continuous LLMOps & Observability -->
+  <rect x="970" y="120" width="190" height="480" rx="10" fill="url(#opsGrad)" stroke="#ea580c" stroke-width="1.5"/>
+  <text x="984" y="155" fill="#fed7aa" font-family="sans-serif" font-size="14" font-weight="700">5. CONTINUOUS LLMOPS</text>
+
+  <rect x="980" y="175" width="170" height="90" rx="8" fill="#431407" stroke="#f97316" stroke-width="1"/>
+  <text x="992" y="200" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Curation Flywheel</text>
+  <text x="992" y="218" fill="#fed7aa" font-family="sans-serif" font-size="11">Synthetic Generation</text>
+  <text x="992" y="234" fill="#94a3b8" font-family="sans-serif" font-size="10">Critique &amp; quality gates</text>
+  <text x="992" y="248" fill="#38bdf8" font-family="sans-serif" font-size="10">DVC dataset snapshots</text>
+
+  <rect x="980" y="280" width="170" height="90" rx="8" fill="#431407" stroke="#f97316" stroke-width="1"/>
+  <text x="992" y="305" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">QLoRA / rsLoRA Train</text>
+  <text x="992" y="325" fill="#fed7aa" font-family="sans-serif" font-size="11">DeepSpeed ZeRO-3</text>
+  <text x="992" y="343" fill="#94a3b8" font-family="sans-serif" font-size="10">Rank-stabilized scaling</text>
+  <text x="992" y="359" fill="#10b981" font-family="sans-serif" font-size="10">Weights &amp; Biases logs</text>
+
+  <rect x="980" y="385" width="170" height="95" rx="8" fill="#431407" stroke="#f97316" stroke-width="1"/>
+  <text x="992" y="410" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">CI/CD Evaluation Gate</text>
+  <text x="992" y="430" fill="#fed7aa" font-family="sans-serif" font-size="11">Automated Benchmark</text>
+  <text x="992" y="448" fill="#94a3b8" font-family="sans-serif" font-size="10">MT-Bench, ROUGE-L</text>
+  <text x="992" y="466" fill="#10b981" font-family="sans-serif" font-size="10">ArgoCD canary release</text>
+
+  <rect x="980" y="495" width="170" height="85" rx="8" fill="#431407" stroke="#f97316" stroke-width="1"/>
+  <text x="992" y="520" fill="#f1f5f9" font-family="sans-serif" font-size="12" font-weight="600">Observability</text>
+  <text x="992" y="540" fill="#fed7aa" font-family="sans-serif" font-size="11">Prometheus &amp; Grafana</text>
+  <text x="992" y="558" fill="#38bdf8" font-family="sans-serif" font-size="10">Tokens, latency, drift</text>
+
+  <!-- Connective Arrows -->
+  <path d="M 240 215 L 275 215" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow-blue)"/>
+  <path d="M 480 215 L 515 215" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrow-green)"/>
+  <path d="M 725 215 L 755 215" stroke="#c084fc" stroke-width="2" fill="none" marker-end="url(#arrow-purple)"/>
+  <path d="M 950 215 L 980 215" stroke="#f472b6" stroke-width="2" fill="none" marker-end="url(#arrow-pink)"/>
+
+</svg>
