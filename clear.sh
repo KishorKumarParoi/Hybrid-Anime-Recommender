@@ -6,23 +6,22 @@
 # Terminates and completely clears ALL project processes, containers, and ports:
 # 1. Stops and removes all Docker Compose containers, networks, and volumes
 # 2. Terminates any lingering microservice containers (Next.js, Go, Express, Rust, FastAPI, DBs)
-# 3. Kills any processes listening on all project ports:
-#    - Port 80    (NGINX Edge Gateway)
-#    - Port 3000  (Next.js 16 Frontend)
-#    - Port 5000  (Flask / Catalog Service)
-#    - Port 5001  (Flask Alternate)
-#    - Port 8000  (FastAPI AI Core)
-#    - Port 8081  (Go Auth Microservice)
-#    - Port 8082  (Express User Interactions)
-#    - Port 8083  (Rust SIMD Vector Engine)
-#    - Port 5432  (PostgreSQL Database)
-#    - Port 27017 (MongoDB Document DB)
-#    - Port 6379  (Redis Cache)
-#    - Port 9092  (Apache Kafka)
-#    - Port 8080  (Jenkins CI/CD)
-#    - Port 9090  (Prometheus Metrics)
-# 4. Cleans up dangling Docker networks and build caches
-# 5. Optionally audits and tears down cloud VMs/GKE if authenticated (preserves GCS datasets)
+# 3. Terminates native standalone processes (Python application.py, Uvicorn, Next.js)
+# 4. Kills any processes listening on all project ports:
+#    - Port 80, 8080 (NGINX Edge Gateway)
+#    - Port 3000     (Next.js 16 Frontend)
+#    - Port 5000, 5005 (Flask / Standalone Portal)
+#    - Port 8000, 8005 (FastAPI AI Core)
+#    - Port 8081     (Go Auth Microservice)
+#    - Port 8082     (Express User Interactions)
+#    - Port 8083     (Rust SIMD Vector Engine)
+#    - Port 5432, 5433 (PostgreSQL Database)
+#    - Port 27017    (MongoDB Document DB)
+#    - Port 6379     (Redis Cache)
+#    - Port 9092     (Apache Kafka)
+#    - Port 9090     (Prometheus Metrics)
+# 5. Cleans up dangling Docker networks and build caches
+# 6. Cleans temporary runtime caches and log files
 # ==============================================================================
 
 set -eo pipefail
@@ -37,7 +36,6 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Helper for privileged commands (non-interactive safe)
 run_sudo() {
     if [ "$EUID" -eq 0 ]; then
         "$@"
@@ -70,13 +68,18 @@ echo -e "${NC}"
 
 # Determine Compose Command
 COMPOSE_CMD=""
-if docker compose version &>/dev/null; then
-    COMPOSE_CMD="docker compose"
-elif command -v docker-compose &>/dev/null; then
-    COMPOSE_CMD="docker-compose"
+if command -v docker &>/dev/null && docker info &>/dev/null; then
+    if docker compose version &>/dev/null; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &>/dev/null; then
+        COMPOSE_CMD="docker-compose"
+    fi
 fi
 
 run_compose() {
+    if [ -z "$COMPOSE_CMD" ]; then
+        return 0
+    fi
     if $COMPOSE_CMD ps &>/dev/null; then
         $COMPOSE_CMD "$@"
     elif [ "$EUID" -eq 0 ]; then
@@ -98,7 +101,7 @@ if [ -n "$COMPOSE_CMD" ] && [ -f docker-compose.yml ]; then
 fi
 
 # Force stop any remaining containers matching project keywords
-if command -v docker &>/dev/null; then
+if command -v docker &>/dev/null && docker info &>/dev/null; then
     MATCHING_CONTAINERS=$(docker ps -aq --filter "name=hybrid-anime" --filter "name=jenkins" 2>/dev/null || true)
     if [ -n "$MATCHING_CONTAINERS" ]; then
         echo "[+] Force-stopping remaining project containers: ${MATCHING_CONTAINERS}..."
@@ -111,22 +114,22 @@ if command -v docker &>/dev/null; then
     run_docker network prune -f 2>/dev/null || true
 fi
 
-# ─── 2. Kill Python Background Processes ──────────────────────────────────────
-echo -e "\n${YELLOW}[2/5] Terminating background Python / Uvicorn / Flask processes...${NC}"
+# ─── 2. Kill Native Background Processes ──────────────────────────────────────
+echo -e "\n${YELLOW}[2/5] Terminating background Python / Uvicorn / Node processes...${NC}"
 
-for proc in "application.py" "demo_end_to_end.py" "uvicorn app.main" "gunicorn"; do
+for proc in "application.py" "demo_end_to_end.py" "uvicorn app.main" "gunicorn" "next-server"; do
     PIDS=$(pgrep -f "$proc" || true)
     if [ -n "$PIDS" ]; then
         echo "[+] Terminating $proc (PIDs: $PIDS)..."
         kill -9 $PIDS 2>/dev/null || true
     fi
 done
-echo -e "${GREEN}[✓] Python background processes stopped.${NC}"
+echo -e "${GREEN}[✓] Native background processes stopped.${NC}"
 
 # ─── 3. Free All Reserved Project Ports ───────────────────────────────────────
 echo -e "\n${YELLOW}[3/5] Purging active processes on all project ports...${NC}"
 
-PROJECT_PORTS=(80 3000 5000 5001 8000 8081 8082 8083 5432 27017 6379 9092 8080 9090)
+PROJECT_PORTS=(80 3000 5000 5001 5005 8000 8005 8080 8081 8082 8083 5432 5433 27017 6379 9092 9090)
 
 for port in "${PROJECT_PORTS[@]}"; do
     if command -v lsof &>/dev/null; then
@@ -178,7 +181,7 @@ echo -e "${NC}"
 
 echo -e "${BOLD}Port Status Verification:${NC}"
 ALL_CLEAR=true
-for port in 80 3000 8000 8081 8082 8083 5432 27017 6379; do
+for port in 80 3000 5000 8000 8081 8082 8083 5432 27017 6379; do
     if command -v lsof &>/dev/null && lsof -i ":${port}" &>/dev/null; then
         echo -e "  Port ${port}: ${RED}OCCUPIED${NC}"
         ALL_CLEAR=false

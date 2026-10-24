@@ -267,4 +267,43 @@ feature/*  ────────>  test  ────────>  dev  ─�
 - `GET /api/v1/enterprise/governance/audit-trail`: Cryptographically chained HMAC-SHA256 audit log.
 - `GET /api/v1/enterprise/lakehouse/tables`: Medallion Lakehouse table metadata and freshness SLA status.
 
+---
+
+## 11. Zero-Touch Deployment & Teardown Architecture
+
+The platform provides a **single-command deployment orchestrator** and **$0.00 zero-leak teardown** adhering to Principal Systems Engineering standards:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Engineer / Interviewer
+    participant B as bootstrap.sh
+    participant D as deploy.sh
+    participant Docker as Docker / Compose
+    participant Py as Standalone Python (Fallback)
+    participant C as clear.sh
+
+    Dev->>B: curl .../bootstrap.sh | bash
+    Note over B: Detaches /dev/tty (Prevents stdin hang)<br/>Checks RAM: Allocates 4GB Swap if < 4GB<br/>Shallow Clones Repo (--depth 1)
+    B->>D: Exec deploy.sh [flags]
+    
+    alt Docker Daemon Running & Available
+        D->>Docker: docker compose up -d --build (Polyglot Mesh)
+        Docker-->>Dev: Live Endpoints (Ports 80, 3000, 8000, 8081, 8082, 8083)
+    else Docker Missing or Unreachable ("For Whom It Is Not Working")
+        Note over D: AUTO-HEALING ACTIVATED (Zero Docker Required)
+        D->>Py: Launch Native Python Mesh (uv run python application.py)
+        Py-->>Dev: Live Portal & Rec Engine (http://localhost:5000 & 8000)
+    end
+
+    Dev->>C: ./clear.sh
+    Note over C: Terminates All Containers & Volumes<br/>Kills Background Python / Node PIDs<br/>Frees Ports 80, 3000, 5000, 8000, 8081-8083<br/>Verifies 100% Zero-Resource State ($0.00/hr)
+    C-->>Dev: All Clean Confirmation
+```
+
+### Deployment Commands & Fallback Matrix:
+1. **Full Polyglot Mesh**: `curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash`
+2. **Fail-Safe Standalone Link (For Whom It Is Not Working)**: `curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --standalone`
+3. **Ultra-Fast Mode (< 30s)**: `curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --quick`
+4. **$0.00 Complete Teardown**: `./clear.sh`
 

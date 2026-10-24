@@ -7,20 +7,22 @@
 # Run directly on any bare, fresh EC2 instance or local workstation
 # via a single curl command without pre-installing git, docker, or python:
 #
-#   curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash
+#   1. Standard Polyglot Mesh (Full 9 Services):
+#      curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash
 #
-# Or with options:
-#   curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --quick
+#   2. Standalone Mode (Zero Docker, Instant Native Python < 15s):
+#      curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --standalone
 #
-# What this script automates:
-# 1. Non-interactive OS package manager setup (Debian/Ubuntu/RHEL/AL2023/macOS)
-# 2. Fast installs git, curl, and essential network/build tools
-# 3. OOM Protection: Detects if RAM < 4GB and auto-configures a 4GB Swapfile
-# 4. Shallow git clone (--depth 1) for 10x faster download and low bandwidth
-# 5. Non-blocking stdin hand-off to ./deploy.sh with all options preserved
+#   3. Ultra-Fast Lightweight Cloud Mode (< 30s):
+#      curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --quick
 # ==============================================================================
 
 set -eo pipefail
+
+# Ensure standard input is connected to terminal if available (prevents broken pipe in curl ... | bash)
+if [ -e /dev/tty ] && [ -r /dev/tty ]; then
+    exec </dev/tty
+fi
 
 BOLD='\033[1m'
 CYAN='\033[0;36m'
@@ -60,13 +62,15 @@ if ! command -v git &>/dev/null || ! command -v curl &>/dev/null; then
     echo -e "${YELLOW}[+] Installing Git and Core Networking Utilities non-interactively...${NC}"
     if [ -f /etc/debian_version ]; then
         run_sudo apt-get update -qq
-        run_sudo apt-get install -y -qq --no-install-recommends git curl ca-certificates tar gzip unzip build-essential >/dev/null 2>&1
+        run_sudo apt-get install -y -qq --no-install-recommends git curl ca-certificates tar gzip unzip build-essential >/dev/null 2>&1 || true
     elif [ -f /etc/amazon-linux-release ] || [ -f /etc/redhat-release ]; then
         if command -v dnf &>/dev/null; then
             run_sudo dnf install -y -q git curl ca-certificates tar gzip unzip >/dev/null 2>&1 || true
         else
             run_sudo yum install -y -q git curl ca-certificates tar gzip unzip >/dev/null 2>&1 || true
         fi
+    elif [ -f /etc/alpine-release ]; then
+        run_sudo apk add --no-cache git curl bash ca-certificates
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if ! command -v git &>/dev/null; then
             xcode-select --install 2>/dev/null || true

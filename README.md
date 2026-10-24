@@ -370,14 +370,52 @@ The entire platform can be deployed on **any fresh, blank AWS EC2 instance, clou
 curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash
 ```
 
-### ⚡ Speed & Cost-Optimized Alternative Boot Modes:
+---
+
+### 🆘 One-Click Link For Whom It Is Not Working (Zero-Docker Standalone Mode)
+
+If Docker is not installed, the Docker daemon is stopped, you are on a restricted machine without sudo/root, or container builds are failing, run this **instant fail-safe command**:
+
 ```bash
-# Ultra-Fast / Low-Resource Mode: Boots Core AI, Redis, NGINX & Frontend in < 30 seconds
+curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --standalone
+```
+
+> **Why this works when standard deployment fails:**
+> - **Zero Docker Dependency**: Runs natively via Python 3.12 and ultra-fast `uv`.
+> - **No Root / Sudo Required**: Operates in user space without needing daemon privileges.
+> - **Sub-15s Instant Boot**: Launches the interactive Web Portal & Rec Engine on `http://localhost:5000` (or `5005`) and FastAPI on `http://localhost:8000` (or `8005`) with in-memory caching and LangGraph autonomous agents.
+
+---
+
+### ⚡ Alternative One-Click Boot Modes:
+
+```bash
+# 1. Ultra-Fast Lightweight Cloud Mode: Boots Core AI, Redis, NGINX & Frontend in < 30 seconds
 curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --quick
 
-# Polyglot Full Mesh + Automated Test Suite Validation
+# 2. Polyglot Full Mesh + Automated 76-Test Suite Validation
 curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh | bash -s -- --test
+
+# 3. Manual Clone & Run (If raw GitHub curl is restricted by corporate firewall)
+git clone --depth 1 https://github.com/KishorKumarParoi/Hybrid-Anime-Recommender.git
+cd Hybrid-Anime-Recommender
+chmod +x deploy.sh clear.sh bootstrap.sh
+./deploy.sh
 ```
+
+---
+
+### 🛠️ Troubleshooting Matrix: "Why It Fails & How It Auto-Heals"
+
+| Issue / Error Symptom | Root Cause | Built-in Auto-Healing & One-Click Fix |
+| :--- | :--- | :--- |
+| **`Cannot connect to Docker daemon`** | Docker Desktop closed (macOS) or `dockerd` stopped (Linux) | **Auto-Switch**: `deploy.sh` detects daemon status and automatically falls back to Standalone Native Mode. Or force: `curl -fsSL .../bootstrap.sh \| bash -s -- --standalone`. |
+| **`sudo: a password is required`** | Stdin consumed by pipe in `curl ... \| bash` | **Auto-Healed**: `bootstrap.sh` detaches `exec </dev/tty` so password prompts work cleanly, or run manual git clone. |
+| **`port is already allocated (80/8000/5432)`** | Another service occupying port on host | **Auto-Healed**: `deploy.sh` dynamically shifts host ports (8000 $\to$ 8005, 5432 $\to$ 5433, 80 $\to$ 8080) without breaking internal networks. |
+| **`Out of Memory (OOM) / Killed`** | Compiling on small cloud VMs (`t2.micro`, `t3.small`) | **Auto-Healed**: `bootstrap.sh` detects RAM $< 4\text{GB}$ and auto-configures a **4GB Swapfile** before running any builds. |
+| **`curl: (23) Failed writing body`** | Subshell closed before transfer completed | Run via process substitution: `bash <(curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recommender/main/bootstrap.sh)` |
+
+---
 
 ### 💰 Cost & Speed Optimization Engineering:
 1. **Host-Level OOM Protection & Auto-Swap**:
@@ -402,15 +440,6 @@ curl -fsSL https://raw.githubusercontent.com/KishorKumarParoi/Hybrid-Anime-Recom
 5. **Self-Healing Port Remapping**: If local host ports (5432, 8000, 80) are occupied, it automatically shifts host port bindings to free ports (5433, 8005, 8080) without breaking internal microservice networks.
 6. **Polyglot Mesh Orchestration**: Compiles and launches all 9 containerized services with Docker BuildKit parallelization.
 7. **Automated Health Gating & LLMOps Verification**: Probes all microservices and executes the complete data curation, RSLoRA, and multi-LoRA serving verification cycle.
-
-### Alternative: Manual Clone & Run
-If you already have `git` installed and prefer cloning manually:
-```bash
-git clone --depth 1 https://github.com/KishorKumarParoi/Hybrid-Anime-Recommender.git
-cd Hybrid-Anime-Recommender
-chmod +x deploy.sh clear.sh bootstrap.sh
-./deploy.sh
-```
 
 ### Enterprise Service Endpoints:
 * **Web Platform (NGINX Edge)**: `http://<SERVER_IP>:80`
