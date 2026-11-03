@@ -1,5 +1,7 @@
 # 🎬 Hybrid Anime Intelligence & Continuous LLMOps Platform
 
+[![Executive Pitch Deck](https://img.shields.io/badge/Executive_Pitch_Deck-pptx.kishor.tech-FFD700?style=for-the-badge&logo=microsoftpowerpoint&logoColor=black)](https://pptx.kishor.tech)
+[![4K Cinematic Video Reel](https://img.shields.io/badge/YouTube_Video-4K_Cinematic_Reel-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=mqX-2FW3o0Q)
 [![Tests Status](https://img.shields.io/badge/Tests-76%2F76%20Passing%20(100%25)-success?style=for-the-badge&logo=pytest)](file:///Users/kishorkumarparoi/Desktop/Hybrid-Anime-Recommender/scripts/test_all.sh)
 [![Python](https://img.shields.io/badge/Python-3.12%20(uv)-3776AB?style=for-the-badge&logo=python&logoColor=white)](file:///Users/kishorkumarparoi/Desktop/Hybrid-Anime-Recommender/pyproject.toml)
 [![Rust](https://img.shields.io/badge/Rust-1.85%2B%20(SIMD)-000000?style=for-the-badge&logo=rust&logoColor=white)](file:///Users/kishorkumarparoi/Desktop/Hybrid-Anime-Recommender/services/rust-scoring-engine)
@@ -21,12 +23,21 @@ A production-grade, globally distributed enterprise AI platform engineered to de
 
 ![Hybrid Anime Recommender Master Architecture Flow](docs/images/01_architecture_flow.svg)
 
+> [!IMPORTANT]
+> ### 💎 Executive Boardroom Pitch Deck & 4K Systems Video Walkthrough
+> * 🖥️ **Live Interactive Pitch Deck:** [**pptx.kishor.tech**](https://pptx.kishor.tech) — Full 24-slide executive presentation with all 15 flagship architecture blueprints, resume pedigree, and zero-download Office Online viewing.
+> * 🎬 **4K Cinematic System Reel:** [**Watch on YouTube (4K 60FPS)**](https://www.youtube.com/watch?v=mqX-2FW3o0Q) — 90-second high-impact architectural walkthrough of the production mesh, Rust SIMD vector pipelines, and continuous LLMOps flywheel.
+> * ⬇️ **Direct Deck Download:** [**Kishor_Kumar_Paroi_10000_Dollar_Executive_Deck.pptx**](https://pptx.kishor.tech/Kishor_Kumar_Paroi_10000_Dollar_Executive_Deck.pptx) (5.3 MB Widescreen 16:9).
+> * 👁️ **Microsoft Office Online Viewer:** [**Open in PowerPoint Online**](https://view.officeapps.live.com/op/view.aspx?src=https%3A%2F%2Fpptx.kishor.tech%2FKishor_Kumar_Paroi_10000_Dollar_Executive_Deck.pptx) (Zero download required).
+
 ---
 
 ## 🧭 Executive Documentation Navigator & Learning Paths
 
 | Document | Focus & Target Audience | Core Content & Topics Covered |
 | :--- | :--- | :--- |
+| **[Executive 24-Slide Pitch Deck](https://pptx.kishor.tech)** | Board Members & Investors | Full 24-slide executive architecture presentation, verified metrics ($1.4M ARR, <35ms RAG), and online interactive viewer. |
+| **[4K Cinematic Systems Reel](https://www.youtube.com/watch?v=mqX-2FW3o0Q)** | Technical Diligence & Execs | 90-second 4K video reel covering production LangGraph mesh, vLLM Multi-LoRA, and Rust SIMD. |
 | **[Deep Multi-Agent Mesh Specification](docs/DEEP_AGENT_MESH.md)** | AI Agents & LLMOps Leads | 7-Node LangGraph State Machine, reflection loop engineering, CTO gate & HITL break-glass tokens (`/api/v1/deep-agents/`). |
 | **[Step-by-Step Learning Curriculum](docs/STEP_BY_STEP_LEARNING.md)** | Self-Paced Learners & Engineers | 6 pedagogical modules: Polyglot mesh, NCF/ChromaDB algorithms, RSLoRA math, dynamic vLLM serving, enterprise suite, and cloud bootstrap. |
 | **[Workflow Serialization & Data Journey](docs/WORKFLOW_SERIALIZATION.md)** | System Architects & Leads | Detailed request lifecycle tracing: client ingress $\to$ auth $\to$ SIMD scoring $\to$ telemetry flywheel $\to$ evaluation gates $\to$ vLLM multi-LoRA. |
