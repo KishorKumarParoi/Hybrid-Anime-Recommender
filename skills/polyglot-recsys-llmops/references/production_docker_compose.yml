@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  nginx-edge:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - rust-scoring
+      - go-auth
+      - node-interactions
+      - python-core
+      - nextjs-frontend
+
+  rust-scoring:
+    build:
+      context: ../../../services/rust-scoring-engine
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - RUST_LOG=info
+
+  go-auth:
+    build:
+      context: ../../../services/go-auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+
+  node-interactions:
+    build:
+      context: ../../../services/express-interaction-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+
+  python-core:
+    build:
+      context: ../../../
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+
+  nextjs-frontend:
+    build:
+      context: ../../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=recsys_db
+      - POSTGRES_PASSWORD=postgres
+
+  mongodb:
+    image: mongo:7-jammy
+    ports:
+      - "27017:27017"

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#070b14"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#050811"/>
+    </linearGradient>
+
+    <!-- Glowing Accents -->
+    <linearGradient id="neonCyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+
+    <linearGradient id="neonPurple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f355da"/>
+      <stop offset="100%" stop-color="#7000ff"/>
+    </linearGradient>
+
+    <linearGradient id="chipGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="100" fill="url(#bgGrad)"/>
+  <rect x="6" y="6" width="500" height="500" rx="94" stroke="#1e293b" stroke-width="3" fill="none"/>
+
+  <!-- Subtle Neural Grid Pattern -->
+  <circle cx="256" cy="256" r="180" stroke="#1e293b" stroke-width="1.5" stroke-dasharray="6 6"/>
+  <circle cx="256" cy="256" r="120" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+  <!-- Outer Neon Glowing Hexagon Core -->
+  <polygon points="256,90 390,167 390,323 256,400 122,323 122,167" 
+           stroke="url(#neonCyan)" stroke-width="5" fill="url(#chipGrad)" filter="url(#glow)" opacity="0.95"/>
+
+  <!-- Inner Dynamic Lightning / SIMD Vector Bolt -->
+  <path d="M276 130 L180 260 L246 260 L236 380 L332 245 L266 245 Z" 
+        fill="url(#neonPurple)" filter="url(#glow)"/>
+
+  <!-- Surrounding Polyglot Node Orbs -->
+  <!-- Rust (Top) -->
+  <circle cx="256" cy="70" r="14" fill="#f97316" stroke="#fff" stroke-width="2.5"/>
+  <!-- Go (Right) -->
+  <circle cx="410" cy="245" r="14" fill="#00add8" stroke="#fff" stroke-width="2.5"/>
+  <!-- Python (Bottom) -->
+  <circle cx="256" cy="420" r="14" fill="#3b82f6" stroke="#fff" stroke-width="2.5"/>
+  <!-- Node (Left) -->
+  <circle cx="102" cy="245" r="14" fill="#22c55e" stroke="#fff" stroke-width="2.5"/>
+
+  <!-- Connecting Vector Lines -->
+  <line x1="256" y1="84" x2="256" y2="130" stroke="#f97316" stroke-width="2" stroke-dasharray="3 3"/>
+  <line x1="396" y1="245" x2="350" y2="245" stroke="#00add8" stroke-width="2" stroke-dasharray="3 3"/>
+  <line x1="256" y1="406" x2="256" y2="370" stroke="#3b82f6" stroke-width="2" stroke-dasharray="3 3"/>
+  <line x1="116" y1="245" x2="160" y2="245" stroke="#22c55e" stroke-width="2" stroke-dasharray="3 3"/>
+
+  <!-- Subtitle Text -->
+  <text x="256" y="470" text-anchor="middle" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="700" letter-spacing="3">POLYGLOT RECSYS</text>
+</svg>
