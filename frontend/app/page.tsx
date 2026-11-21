@@ -147,7 +147,7 @@ export default function HomePage() {
     | "cold-start"
     | "langgraph-dossier"
     | "polyglot-mesh"
-  >("character-persona");
+  >("live-news");
   const [soundOn, setSoundOn] = useState(true);
   const [selectedAnimeDetail, setSelectedAnimeDetail] = useState<any | null>(null);
 

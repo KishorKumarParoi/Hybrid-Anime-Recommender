@@ -39,12 +39,31 @@ logger = logging.getLogger(__name__)
 # NEON POSTGRESQL PRODUCTION CLIENT
 # ──────────────────────────────────────────────────────────────
 try:
-    from src.db.neon_client import search_animes, vector_similarity_recs, get_neon_stats
+    from src.db.neon_client import (
+        search_animes,
+        vector_similarity_recs,
+        get_neon_stats,
+        get_latest_news,
+        vote_news,
+        get_news_comments,
+        add_news_comment,
+        vote_comment,
+        save_user_character_match,
+        get_user_character_matches
+    )
     NEON_AVAILABLE = True
     logger.info("[✓] Neon PostgreSQL client imported successfully")
 except Exception as _ne:
     logger.warning(f"[!] Neon client not available: {_ne}")
     NEON_AVAILABLE = False
+
+try:
+    from src.crawler.news_crawler import init_news_scheduler, crawl_and_sync_all_news
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "false":
+        init_news_scheduler()
+    logger.info("[✓] 30-minute Anime News Crawler scheduler ready")
+except Exception as _ce:
+    logger.warning(f"[!] News crawler scheduler init warning: {_ce}")
 
 app = Flask(__name__)
 
@@ -986,10 +1005,27 @@ def api_recommend_pgvector():
 def api_news_live():
     """
     24/7 Live AI Anime Newsroom endpoint.
-    Serves autonomous studio intelligence feeds, vLLM 3-bullet executive briefs,
-    and character commentary.
+    Serves autonomous studio intelligence feeds crawled every 30 minutes from RSS, Reddit, and Twitter/X,
+    synced to Neon PostgreSQL with UUIDs, Reddit-style upvotes/downvotes, and threaded reviews.
     """
     try:
+        user_id = request.args.get("user_id", "anonymous_user")
+        limit = int(request.args.get("limit", 25))
+
+        if NEON_AVAILABLE:
+            db_news = get_latest_news(limit=limit, user_id=user_id)
+            if db_news:
+                return jsonify({
+                    "status": "success",
+                    "count": len(db_news),
+                    "news": db_news,
+                    "source": "Neon PostgreSQL (Live 30-min Crawler Sync)",
+                    "engine": "vLLM-Qwen2.5-AWQ-GPU",
+                    "scheduler": "APScheduler 30-Min Recurring Active",
+                    "crawler_targets": ["ANN RSS", "Crunchyroll", "Reddit r/anime", "Twitter/X Studios"]
+                }), 200
+
+        # Fallback to local snapshot
         news_file = os.path.join(os.path.dirname(__file__), "data", "anime_news_2027.json")
         if os.path.exists(news_file):
             with open(news_file, "r", encoding="utf-8") as f:
@@ -998,11 +1034,197 @@ def api_news_live():
                 "status": "success",
                 "count": len(news_items),
                 "news": news_items,
+                "source": "Local Snapshot Cache",
                 "engine": "vLLM-Qwen2.5-AWQ-GPU",
                 "mode": "24/7 Live Autonomous Studio Scraping"
             }), 200
+
         return jsonify({"status": "error", "message": "Live newsroom data not found"}), 404
     except Exception as e:
+        logger.error(f"Error in api_news_live: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/news/crawl", methods=["POST"])
+def api_news_crawl_trigger():
+    """
+    Manually triggers an immediate news crawl across ANN RSS, Reddit r/anime, and Twitter/X,
+    generating AI 3-bullet briefs, character commentary, and upserting into Neon PostgreSQL.
+    """
+    try:
+        from src.crawler.news_crawler import crawl_and_sync_all_news
+        count = crawl_and_sync_all_news()
+        return jsonify({
+            "status": "success",
+            "message": f"Successfully crawled and synced {count} news articles to Neon PostgreSQL!",
+            "count": count
+        }), 200
+    except Exception as e:
+        logger.error(f"Error triggering news crawl: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/news/<news_id>/vote", methods=["POST"])
+def api_news_vote(news_id):
+    """
+    Upvote (+1) or downvote (-1) an anime news story.
+    Updates news_votes and adjusts upvotes/downvotes totals in Neon DB.
+    """
+    try:
+        if not NEON_AVAILABLE:
+            return jsonify({"status": "error", "message": "Neon DB unavailable"}), 503
+        data = request.get_json() or {}
+        user_id = data.get("user_id", "guest_user")
+        vote_type = int(data.get("vote", 1))
+        if vote_type not in (1, -1):
+            return jsonify({"status": "error", "message": "Vote must be 1 (upvote) or -1 (downvote)"}), 400
+
+        res = vote_news(news_id=news_id, user_id=user_id, vote_type=vote_type)
+        return jsonify(res), 200 if res.get("status") == "success" else 500
+    except Exception as e:
+        logger.error(f"Error voting on news {news_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/news/<news_id>/comments", methods=["GET"])
+def api_news_get_comments(news_id):
+    """
+    Retrieve Reddit-style threaded reviews and discussions for an anime news item.
+    """
+    try:
+        if not NEON_AVAILABLE:
+            return jsonify({"status": "error", "message": "Neon DB unavailable"}), 503
+        user_id = request.args.get("user_id", "anonymous")
+        comments = get_news_comments(news_id=news_id, user_id=user_id)
+        return jsonify({
+            "status": "success",
+            "news_id": news_id,
+            "count": len(comments),
+            "comments": comments
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching comments for news {news_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/news/<news_id>/comments", methods=["POST"])
+def api_news_post_comment(news_id):
+    """
+    Post a Reddit-style review or comment on an anime news story with a UUID primary key.
+    """
+    try:
+        if not NEON_AVAILABLE:
+            return jsonify({"status": "error", "message": "Neon DB unavailable"}), 503
+        data = request.get_json() or {}
+        user_id = data.get("user_id", "anonymous_user")
+        user_name = data.get("user_name", "Anime Otaku")
+        content = data.get("content", "").strip()
+        character_flair = data.get("character_flair")
+        parent_id = data.get("parent_id")
+        avatar_gradient = data.get("avatar_gradient")
+
+        if not content:
+            return jsonify({"status": "error", "message": "Comment content cannot be empty"}), 400
+
+        new_comment = add_news_comment(
+            news_id=news_id,
+            user_id=user_id,
+            user_name=user_name,
+            content=content,
+            character_flair=character_flair,
+            parent_id=parent_id,
+            avatar_gradient=avatar_gradient
+        )
+
+        if new_comment:
+            return jsonify({
+                "status": "success",
+                "comment": new_comment
+            }), 201
+        return jsonify({"status": "error", "message": "Failed to create comment"}), 500
+    except Exception as e:
+        logger.error(f"Error posting comment on news {news_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/comments/<comment_id>/vote", methods=["POST"])
+def api_comment_vote(comment_id):
+    """
+    Upvote (+1) or downvote (-1) a Reddit-style discussion comment.
+    """
+    try:
+        if not NEON_AVAILABLE:
+            return jsonify({"status": "error", "message": "Neon DB unavailable"}), 503
+        data = request.get_json() or {}
+        user_id = data.get("user_id", "guest_user")
+        vote_type = int(data.get("vote", 1))
+        if vote_type not in (1, -1):
+            return jsonify({"status": "error", "message": "Vote must be 1 or -1"}), 400
+
+        res = vote_comment(comment_id=comment_id, user_id=user_id, vote_type=vote_type)
+        return jsonify(res), 200 if res.get("status") == "success" else 500
+    except Exception as e:
+        logger.error(f"Error voting on comment {comment_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/character/save-match", methods=["POST"])
+def api_character_save_match():
+    """
+    Persist an anime character struggle match to Neon PostgreSQL with a UUID identifier.
+    """
+    try:
+        if not NEON_AVAILABLE:
+            return jsonify({"status": "error", "message": "Neon DB unavailable"}), 503
+        data = request.get_json() or {}
+        user_id = data.get("user_id", "anonymous_user")
+        character_id = data.get("character_id", "unknown")
+        character_name = data.get("character_name", "Unknown Character")
+        match_percentage = float(data.get("match_percentage", 95.0))
+        struggle_input = data.get("struggle_input", "")
+        shared_struggles = data.get("shared_struggles", [])
+        resonance_analysis = data.get("resonance_analysis", "")
+
+        match_uuid = save_user_character_match(
+            user_id=user_id,
+            character_id=character_id,
+            character_name=character_name,
+            match_percentage=match_percentage,
+            struggle_input=struggle_input,
+            shared_struggles=shared_struggles,
+            resonance_analysis=resonance_analysis
+        )
+
+        if match_uuid:
+            return jsonify({
+                "status": "success",
+                "match_id": match_uuid,
+                "message": f"Character match saved to Neon DB with UUID: {match_uuid}"
+            }), 201
+        return jsonify({"status": "error", "message": "Failed to persist character match"}), 500
+    except Exception as e:
+        logger.error(f"Error saving character match: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/character/saved-matches", methods=["GET"])
+def api_character_get_saved_matches():
+    """
+    Retrieve recently saved character matches from Neon PostgreSQL for a user.
+    """
+    try:
+        if not NEON_AVAILABLE:
+            return jsonify({"status": "error", "message": "Neon DB unavailable"}), 503
+        user_id = request.args.get("user_id", "anonymous_user")
+        matches = get_user_character_matches(user_id=user_id)
+        return jsonify({
+            "status": "success",
+            "user_id": user_id,
+            "count": len(matches),
+            "matches": matches
+        }), 200
+    except Exception as e:
+        logger.error(f"Error retrieving saved character matches: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

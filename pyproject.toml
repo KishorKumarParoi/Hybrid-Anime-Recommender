@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiokafka>=0.14.0",
+    "apscheduler>=3.11.3",
     "asyncpg>=0.32.0",
     "bcrypt>=5.0.0",
     "black>=26.10.1",
@@ -19,6 +20,7 @@ dependencies = [
     "dvc>=3.67.1",
     "dvc-gs>=3.1.0",
     "fastapi>=0.143.3",
+    "feedparser>=6.0.14",
     "flake8>=7.4.1",
     "flask>=3.1.3",
     "google-cloud-storage>=3.17.0",

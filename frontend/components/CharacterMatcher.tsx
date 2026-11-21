@@ -19,7 +19,8 @@ import {
   Shield,
   Layers,
   ArrowRight,
-  BookOpen
+  BookOpen,
+  Database
 } from "lucide-react";
 import { playClickSound, playSuccessChime } from "@/components/SoundFX";
 
@@ -96,6 +97,7 @@ export default function CharacterMatcher({
   // Struggle Matching State
   const [struggleInput, setStruggleInput] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [savedMatchUuid, setSavedMatchUuid] = useState<string | null>(null);
   const [struggleMatch, setStruggleMatch] = useState<{
     character: CharacterProfile;
     matchPercentage: number;
@@ -103,6 +105,39 @@ export default function CharacterMatcher({
     resonanceAnalysis: string;
     runnerUps: any[];
   } | null>(null);
+
+  const persistMatchToNeon = async (
+    char: CharacterProfile,
+    matchPercentage: number,
+    text: string,
+    sharedStruggles: string[],
+    resonanceAnalysis: string
+  ) => {
+    try {
+      const uid = (typeof window !== "undefined" && localStorage.getItem("mal_user_uuid")) || "usr_guest";
+      const res = await fetch("http://localhost:5001/api/character/save-match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: uid,
+          character_id: char.id,
+          character_name: char.name,
+          match_percentage: matchPercentage,
+          struggle_input: text,
+          shared_struggles: sharedStruggles,
+          resonance_analysis: resonanceAnalysis
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "success" && data.match_id) {
+          setSavedMatchUuid(data.match_id);
+        }
+      }
+    } catch (_err) {
+      console.warn("Neon character sync offline, using local memory state");
+    }
+  };
 
   useEffect(() => {
     fetch("/data/anime_characters.json")
@@ -252,6 +287,13 @@ export default function CharacterMatcher({
             runnerUps: data.all_matches?.slice(1, 4) || []
           });
           setSelectedCharId(data.matched_character.id);
+          persistMatchToNeon(
+            data.matched_character,
+            data.match_percentage,
+            text,
+            data.shared_struggles,
+            data.resonance_analysis
+          );
           playSuccessChime();
           setIsAnalyzing(false);
           return;
@@ -266,6 +308,13 @@ export default function CharacterMatcher({
     if (fallbackResult) {
       setStruggleMatch(fallbackResult);
       setSelectedCharId(fallbackResult.character.id);
+      persistMatchToNeon(
+        fallbackResult.character,
+        fallbackResult.matchPercentage,
+        text,
+        fallbackResult.sharedStruggles,
+        fallbackResult.resonanceAnalysis
+      );
       playSuccessChime();
     }
     setIsAnalyzing(false);
@@ -464,6 +513,13 @@ export default function CharacterMatcher({
                   {activePersona.archetype}
                 </span>
               </div>
+
+              {savedMatchUuid && struggleMatch && activeTab === "struggle" && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mt-3 shadow-lg shadow-emerald-500/10">
+                  <Database className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                  <span>Neon DB Synced • UUID: {savedMatchUuid.substring(0, 8)}...</span>
+                </div>
+              )}
 
               {/* Shared Struggles Pill Cloud */}
               {activePersona.struggle_keywords && (

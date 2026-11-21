@@ -24,6 +24,11 @@ const nextConfig = {
         source: '/api/python/:path*',
         destination: 'http://127.0.0.1:8000/api/v1/:path*',
       },
+      // 5. Flask AI Recommender, Crawler & Neon DB Service (Port 5001)
+      {
+        source: '/api/flask/:path*',
+        destination: 'http://127.0.0.1:5001/api/:path*',
+      },
     ];
   },
 };
