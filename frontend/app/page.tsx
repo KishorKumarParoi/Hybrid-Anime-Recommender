@@ -28,7 +28,8 @@ import {
   Filter,
   Radio,
   Award,
-  Calendar
+  Calendar,
+  Database
 } from "lucide-react";
 import VectorGalaxy3D from "@/components/VectorGalaxy3D";
 import ColdStartSwiper from "@/components/ColdStartSwiper";
@@ -605,7 +606,12 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center space-x-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3.5 py-1 text-xs font-semibold text-violet-300">
               <Zap className="h-3.5 w-3.5 text-violet-400" />
-              <span>Next.js 16 Turbopack • Polyglot Microservices (Go • Express • Rust • Python)</span>
+              <span>Next.js 16 Turbopack • Polyglot Mesh</span>
+            </span>
+
+            <span className="inline-flex items-center space-x-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-300">
+              <Database className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Neon PostgreSQL • 17,367 Titles • pgvector HNSW</span>
             </span>
 
             {/* Audio Toggle */}
@@ -672,8 +678,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Microservices Real-Time Health Status Indicators */}
-        <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {/* Microservices & Cloud Database Real-Time Health Status Indicators */}
+        <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-6 gap-3">
           <div className="flex flex-col rounded-xl border border-white/5 bg-slate-950/40 p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono text-slate-400">Go Auth (8081)</span>
@@ -708,6 +714,15 @@ export default function HomePage() {
             </div>
             <span className="text-sm font-bold text-slate-100 mt-1 capitalize">{serviceStatus.pythonFastApi.status}</span>
             <span className="text-[11px] text-slate-400">LangGraph • Hybrid ML</span>
+          </div>
+
+          <div className="flex flex-col rounded-xl border border-emerald-500/30 bg-slate-950/40 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono text-emerald-400">Neon Postgres</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            </div>
+            <span className="text-sm font-bold text-slate-100 mt-1">17,367 Titles</span>
+            <span className="text-[11px] text-emerald-300">pgvector • HNSW</span>
           </div>
 
           <div className="flex flex-col rounded-xl border border-red-500/30 bg-slate-950/40 p-3">

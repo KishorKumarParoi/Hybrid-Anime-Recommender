@@ -38,6 +38,7 @@ dependencies = [
     "passlib>=1.7.4",
     "peft>=0.21.2",
     "prometheus-client>=0.26.0",
+    "psycopg2-binary>=2.9.13",
     "pyjwt>=2.15.1",
     "pymongo>=4.19.0",
     "pytest>=9.1.1",

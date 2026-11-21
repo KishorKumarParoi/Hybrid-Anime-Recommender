@@ -21,7 +21,6 @@ from src.security.pyrit_orchestrator import PyRITRedTeamOrchestrator
 from src.streaming.kafka_stream import get_producer
 from config.paths_config import MODEL_PATH, USER_WEIGHTS_PATH, ANIME_WEIGHTS_PATH
 
-
 # Prometheus Metrics Client
 from prometheus_client import (
     Counter,
@@ -35,6 +34,17 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# ──────────────────────────────────────────────────────────────
+# NEON POSTGRESQL PRODUCTION CLIENT
+# ──────────────────────────────────────────────────────────────
+try:
+    from src.db.neon_client import search_animes, vector_similarity_recs, get_neon_stats
+    NEON_AVAILABLE = True
+    logger.info("[✓] Neon PostgreSQL client imported successfully")
+except Exception as _ne:
+    logger.warning(f"[!] Neon client not available: {_ne}")
+    NEON_AVAILABLE = False
 
 app = Flask(__name__)
 
@@ -852,16 +862,30 @@ def api_character_match_struggle():
 def api_catalog_search():
     """
     Search and paginate across the 17,367+ complete anime dataset.
+    Prioritizes Neon PostgreSQL with GIN full-text & trigram indexes,
+    falling back seamlessly to high-speed in-memory engine.
     Query params: q, genre, min_score, sort, page (1-based), limit (default 24).
     """
     try:
-        q = request.args.get("q", "").strip().lower()
-        genre = request.args.get("genre", "").strip().lower()
+        q = request.args.get("q", "").strip()
+        genre = request.args.get("genre", "").strip()
         min_score = float(request.args.get("min_score", 0.0))
         sort_by = request.args.get("sort", "score").strip().lower()
         page = max(1, int(request.args.get("page", 1)))
         limit = max(1, min(100, int(request.args.get("limit", 24))))
 
+        # Try Neon PostgreSQL first
+        if NEON_AVAILABLE:
+            try:
+                db_res = search_animes(
+                    q=q, genre=genre, min_score=min_score, sort_by=sort_by, page=page, limit=limit
+                )
+                if db_res and db_res.get("status") == "success" and db_res.get("total", 0) > 0:
+                    return jsonify(db_res), 200
+            except Exception as _dbe:
+                logger.warning(f"Neon PostgreSQL search fallback to memory: {_dbe}")
+
+        # In-memory fallback across GLOBAL_ANIME_CATALOG
         catalog = GLOBAL_ANIME_CATALOG
         if not catalog:
             catalog_file = os.path.join(os.path.dirname(__file__), "data", "anime_catalog_full.json")
@@ -871,19 +895,20 @@ def api_catalog_search():
                 with open(catalog_file, "r", encoding="utf-8") as f:
                     catalog = json.load(f)
 
+        q_lower = q.lower()
         filtered = []
         for a in catalog:
             if min_score > 0 and float(a.get("score", 0.0)) < min_score:
                 continue
-            if q:
-                title_match = q in a.get("title", "").lower()
-                synopsis_match = q in a.get("synopsis", "").lower()
-                genre_match = any(q in g.lower() for g in a.get("genres", []))
-                studio_match = q in a.get("studio", "").lower()
+            if q_lower:
+                title_match = q_lower in a.get("title", "").lower()
+                synopsis_match = q_lower in a.get("synopsis", "").lower()
+                genre_match = any(q_lower in g.lower() for g in a.get("genres", []))
+                studio_match = q_lower in a.get("studio", "").lower()
                 if not (title_match or synopsis_match or genre_match or studio_match):
                     continue
-            if genre and genre != "all":
-                if not any(genre in g.lower() for g in a.get("genres", [])):
+            if genre and genre.lower() != "all":
+                if not any(genre.lower() in g.lower() for g in a.get("genres", [])):
                     continue
             filtered.append(a)
 
@@ -909,9 +934,50 @@ def api_catalog_search():
             "page": page,
             "limit": limit,
             "total_pages": (total + limit - 1) // limit if total > 0 else 1,
-            "anime": paginated
+            "anime": paginated,
+            "source": "in_memory_catalog"
         }), 200
 
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/db/stats", methods=["GET"])
+def api_db_stats():
+    """
+    Neon PostgreSQL Telemetry & Health Endpoint.
+    Returns database size, table counts, serverless provider status, and extension verification.
+    """
+    try:
+        if NEON_AVAILABLE:
+            stats = get_neon_stats()
+            return jsonify(stats), 200
+        return jsonify({"status": "error", "message": "Neon database client unavailable"}), 503
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/recommend/pgvector", methods=["POST"])
+def api_recommend_pgvector():
+    """
+    Native pgvector HNSW Cosine Distance Recommender.
+    Runs embedding <=> user_vector directly on Neon AWS over 17,367 items.
+    """
+    try:
+        payload = request.get_json() or {}
+        user_vector = payload.get("vector", [0.5, 0.5, 0.5, 0.5])
+        limit = max(1, min(50, int(payload.get("limit", 12))))
+
+        if NEON_AVAILABLE:
+            recs = vector_similarity_recs(user_vector, limit=limit)
+            return jsonify({
+                "status": "success",
+                "count": len(recs),
+                "engine": "Neon PostgreSQL (pgvector HNSW)",
+                "distance_metric": "cosine (<=>)",
+                "recommendations": recs
+            }), 200
+        return jsonify({"status": "error", "message": "Neon database client unavailable"}), 503
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
