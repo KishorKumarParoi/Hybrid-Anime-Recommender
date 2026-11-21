@@ -2,6 +2,7 @@ import os
 import time
 import json
 import logging
+import numpy as np
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -608,6 +609,156 @@ def api_stream_status():
             "status": "success",
             "streaming": producer.get_status()
         }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/character/all", methods=["GET"])
+def api_character_all():
+    """Retrieve all rich anime character profiles."""
+    try:
+        char_file = os.path.join(os.path.dirname(__file__), "data", "anime_characters.json")
+        if os.path.exists(char_file):
+            with open(char_file, "r", encoding="utf-8") as f:
+                characters = json.load(f)
+            return jsonify({"status": "success", "count": len(characters), "characters": characters}), 200
+        return jsonify({"status": "error", "message": "Character profiling dataset not found"}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/character/match", methods=["POST"])
+def api_character_match():
+    """
+    Computes cosine similarity between user taste vector and all anime character profiles.
+    Assigns the top matching Anime Character Persona to the user.
+    """
+    try:
+        payload = request.get_json() or {}
+        user_vector = payload.get("vector")
+        
+        # If vector is not directly provided, check for query or liked genres
+        if not user_vector or len(user_vector) != 4:
+            # Fallback default vector or derived from preferences
+            action = float(payload.get("action", 0.5))
+            psych = float(payload.get("psychological", 0.5))
+            scifi = float(payload.get("scifi", 0.5))
+            world = float(payload.get("world_building", 0.5))
+            user_vector = [action, psych, scifi, world]
+
+        char_file = os.path.join(os.path.dirname(__file__), "data", "anime_characters.json")
+        if not os.path.exists(char_file):
+            return jsonify({"status": "error", "message": "Character data not initialized"}), 404
+
+        with open(char_file, "r", encoding="utf-8") as f:
+            characters = json.load(f)
+
+        u = np.array(user_vector, dtype=float)
+        norm_u = np.linalg.norm(u)
+        if norm_u == 0:
+            norm_u = 1.0
+
+        matches = []
+        for ch in characters:
+            c_vec = np.array(ch["vector"], dtype=float)
+            norm_c = np.linalg.norm(c_vec)
+            if norm_c == 0:
+                norm_c = 1.0
+            cos_sim = float(np.dot(u, c_vec) / (norm_u * norm_c))
+            match_pct = round(max(0.0, min(100.0, cos_sim * 100)), 1)
+            
+            matches.append({
+                "character": ch,
+                "similarity": cos_sim,
+                "match_percentage": match_pct
+            })
+
+        matches.sort(key=lambda x: x["similarity"], reverse=True)
+        top_match = matches[0] if matches else None
+
+        # Also find tailored anime recommendations matching this character persona
+        catalog_file = os.path.join(os.path.dirname(__file__), "data", "anime_1200.json")
+        curated_recs = []
+        if os.path.exists(catalog_file) and top_match:
+            with open(catalog_file, "r", encoding="utf-8") as f:
+                catalog = json.load(f)
+            
+            target_genres = set(top_match["character"].get("recommended_genres", []))
+            for anime in catalog:
+                anime_genres = set(anime.get("genres", []))
+                overlap = len(target_genres.intersection(anime_genres))
+                if overlap > 0:
+                    curated_recs.append({
+                        **anime,
+                        "persona_match_score": round(anime.get("score", 7.0) * (1 + overlap * 0.05), 2)
+                    })
+            curated_recs.sort(key=lambda x: x["persona_match_score"], reverse=True)
+            curated_recs = curated_recs[:8]
+
+        return jsonify({
+            "status": "success",
+            "assigned_persona": top_match["character"] if top_match else None,
+            "match_percentage": top_match["match_percentage"] if top_match else 0.0,
+            "similarity": top_match["similarity"] if top_match else 0.0,
+            "all_matches": [
+                {
+                    "id": m["character"]["id"],
+                    "name": m["character"]["name"],
+                    "anime": m["character"]["anime"],
+                    "title": m["character"]["title"],
+                    "mbti": m["character"]["mbti"],
+                    "match_percentage": m["match_percentage"]
+                }
+                for m in matches[:5]
+            ],
+            "persona_curated_anime": curated_recs
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/catalog/search", methods=["GET"])
+def api_catalog_search():
+    """
+    Search and paginate across the 1,200+ real anime dataset.
+    Query params: q, genre, page (1-based), limit (default 24).
+    """
+    try:
+        q = request.args.get("q", "").strip().lower()
+        genre = request.args.get("genre", "").strip().lower()
+        page = max(1, int(request.args.get("page", 1)))
+        limit = max(1, min(100, int(request.args.get("limit", 24))))
+
+        catalog_file = os.path.join(os.path.dirname(__file__), "data", "anime_1200.json")
+        if not os.path.exists(catalog_file):
+            return jsonify({"status": "error", "message": "Catalog data not found"}), 404
+
+        with open(catalog_file, "r", encoding="utf-8") as f:
+            catalog = json.load(f)
+
+        filtered = []
+        for a in catalog:
+            if q and q not in a["title"].lower() and not any(q in g.lower() for g in a["genres"]):
+                continue
+            if genre and not any(genre in g.lower() for g in a["genres"]):
+                continue
+            filtered.append(a)
+
+        total = len(filtered)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated = filtered[start:end]
+
+        return jsonify({
+            "status": "success",
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": (total + limit - 1) // limit,
+            "anime": paginated
+        }), 200
+
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

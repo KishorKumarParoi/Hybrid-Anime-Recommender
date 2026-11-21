@@ -1,0 +1,705 @@
+[
+  {
+    "id": "okabe-rintarou",
+    "name": "Rintarou Okabe",
+    "title": "The Eccentric Visionary ('Hououin Kyouma')",
+    "anime": "Steins;Gate",
+    "mbti": "ENTP",
+    "quote": "I am the great mad scientist, Hououin Kyouma! The world and its future are in my hands!",
+    "traits": [
+      "Visionary",
+      "Eccentric",
+      "Relentless",
+      "Deeply Caring",
+      "Skeptical"
+    ],
+    "vector": [
+      0.35,
+      0.95,
+      0.98,
+      0.6
+    ],
+    "bio": "You possess an unyielding curiosity and challenge reality itself. Though you often mask vulnerability behind dramatic theatrics, you bear immense psychological burdens to protect the people who matter most.",
+    "avatar_gradient": "from-amber-500 via-orange-600 to-red-700",
+    "archetype": "The Mad Scientist",
+    "recommended_genres": [
+      "Sci-Fi",
+      "Thriller",
+      "Psychological",
+      "Mystery"
+    ],
+    "badge_color": "border-amber-500/40 text-amber-300 bg-amber-500/10"
+  },
+  {
+    "id": "levi-ackerman",
+    "name": "Levi Ackerman",
+    "title": "Humanity's Strongest Tactical Soldier",
+    "anime": "Attack on Titan",
+    "mbti": "ISTJ",
+    "quote": "The only thing we're allowed to do... is to believe that we won't regret the choice we made.",
+    "traits": [
+      "Stoic",
+      "Lethal Precision",
+      "Duty-Bound",
+      "Uncompromising",
+      "Protective"
+    ],
+    "vector": [
+      0.98,
+      0.75,
+      0.2,
+      0.85
+    ],
+    "bio": "You don't talk much because your results speak for you. In high-pressure, chaotic situations, you remain laser-focused and execute with surgical precision, carrying unspoken grief with stoic grace.",
+    "avatar_gradient": "from-emerald-500 via-teal-700 to-slate-900",
+    "archetype": "The Relentless Vanguard",
+    "recommended_genres": [
+      "Action",
+      "Military",
+      "Dark Fantasy",
+      "Drama"
+    ],
+    "badge_color": "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+  },
+  {
+    "id": "l-lawliet",
+    "name": "L Lawliet",
+    "title": "The World's Greatest Analytical Mind",
+    "anime": "Death Note",
+    "mbti": "INTP",
+    "quote": "Being alone is better than being with the wrong person. In the end, justice will prevail.",
+    "traits": [
+      "Hyper-Analytical",
+      "Unconventional",
+      "Perceptive",
+      "Calm",
+      "Obsessive"
+    ],
+    "vector": [
+      0.15,
+      0.99,
+      0.35,
+      0.4
+    ],
+    "bio": "You perceive unseen patterns, micro-expressions, and underlying psychological motives that bypass everyone else. You value truth, intellectual games of cat-and-mouse, and calculated risk.",
+    "avatar_gradient": "from-indigo-500 via-slate-800 to-black",
+    "archetype": "The Master Detective",
+    "recommended_genres": [
+      "Psychological",
+      "Mystery",
+      "Suspense",
+      "Crime"
+    ],
+    "badge_color": "border-indigo-500/40 text-indigo-300 bg-indigo-500/10"
+  },
+  {
+    "id": "satoru-gojo",
+    "name": "Satoru Gojo",
+    "title": "The Limitless Sorcerer",
+    "anime": "Jujutsu Kaisen",
+    "mbti": "ENTP",
+    "quote": "Don't worry, I'm the strongest. Throughout heaven and earth, I alone am the honored one.",
+    "traits": [
+      "Unshakeable Confidence",
+      "Playful",
+      "Overwhelming Power",
+      "Protective Mentor"
+    ],
+    "vector": [
+      0.95,
+      0.7,
+      0.45,
+      0.9
+    ],
+    "bio": "Beneath a charismatic, playful, and carefree exterior lies unparalleled mastery. You redefine limits effortlessly and enjoy setting the stage for the next generation to surpass you.",
+    "avatar_gradient": "from-cyan-400 via-blue-600 to-indigo-900",
+    "archetype": "The Limitless Prodigy",
+    "recommended_genres": [
+      "Action",
+      "Supernatural",
+      "Super Power",
+      "Fantasy"
+    ],
+    "badge_color": "border-cyan-500/40 text-cyan-300 bg-cyan-500/10"
+  },
+  {
+    "id": "edward-elric",
+    "name": "Edward Elric",
+    "title": "The Fullmetal Alchemist",
+    "anime": "Fullmetal Alchemist: Brotherhood",
+    "mbti": "ENTJ",
+    "quote": "A lesson without pain is meaningless. For you cannot gain something without sacrificing something else.",
+    "traits": [
+      "Dogmatic",
+      "Brilliant",
+      "Fiercely Loyal",
+      "Passionate",
+      "Unbroken"
+    ],
+    "vector": [
+      0.88,
+      0.78,
+      0.5,
+      0.96
+    ],
+    "bio": "You understand the universal law of Equivalent Exchange. When life knocks you down or demands sacrifice, you channel adversity into relentless scientific and spiritual determination.",
+    "avatar_gradient": "from-red-500 via-amber-600 to-yellow-600",
+    "archetype": "The Tenacious Alchemist",
+    "recommended_genres": [
+      "Action",
+      "Adventure",
+      "Fantasy",
+      "Drama"
+    ],
+    "badge_color": "border-red-500/40 text-red-300 bg-red-500/10"
+  },
+  {
+    "id": "frieren",
+    "name": "Frieren",
+    "title": "The Ageless Mage of the End",
+    "anime": "Frieren: Beyond Journey's End",
+    "mbti": "INTP",
+    "quote": "It is only a fraction of my life... but it changed everything.",
+    "traits": [
+      "Contemplative",
+      "Patient",
+      "Subtle Wit",
+      "Ancient Wisdom",
+      "Deep Sentiment"
+    ],
+    "vector": [
+      0.55,
+      0.82,
+      0.25,
+      0.99
+    ],
+    "bio": "You view time and connection on a grand, contemplative scale. You appreciate small moments, historical echoes, and deep atmospheric worlds over frantic adrenaline.",
+    "avatar_gradient": "from-teal-300 via-cyan-600 to-slate-800",
+    "archetype": "The Timeless Wanderer",
+    "recommended_genres": [
+      "Fantasy",
+      "Adventure",
+      "Drama",
+      "Slice of Life"
+    ],
+    "badge_color": "border-teal-500/40 text-teal-300 bg-teal-500/10"
+  },
+  {
+    "id": "spike-spiegel",
+    "name": "Spike Spiegel",
+    "title": "The Melancholic Jazz Bounty Hunter",
+    "anime": "Cowboy Bebop",
+    "mbti": "ISTP",
+    "quote": "Whatever happens, happens. I'm not going there to die. I'm going to find out if I'm really alive.",
+    "traits": [
+      "Cool Under Pressure",
+      "Philosophical",
+      "Jeet Kune Do Master",
+      "Fatalistic"
+    ],
+    "vector": [
+      0.85,
+      0.72,
+      0.9,
+      0.45
+    ],
+    "bio": "You drift with an effortless cool and a laissez-faire philosophy, yet when push comes to shove, your combat instincts and loyalty to past ghosts are unmatched.",
+    "avatar_gradient": "from-yellow-500 via-sky-800 to-slate-900",
+    "archetype": "The Jazz Noir Nomad",
+    "recommended_genres": [
+      "Sci-Fi",
+      "Action",
+      "Space",
+      "Neo-Noir"
+    ],
+    "badge_color": "border-yellow-500/40 text-yellow-300 bg-yellow-500/10"
+  },
+  {
+    "id": "lelouch-lamperouge",
+    "name": "Lelouch vi Britannia",
+    "title": "The Grandmaster of Rebellion ('Zero')",
+    "anime": "Code Geass",
+    "mbti": "INTJ",
+    "quote": "To defeat evil, I must become a greater evil. Those who shoot must be prepared to be shot.",
+    "traits": [
+      "Mastermind",
+      "Theatrical",
+      "Strategist",
+      "Uncompromising",
+      "Revolutionary"
+    ],
+    "vector": [
+      0.8,
+      0.98,
+      0.88,
+      0.75
+    ],
+    "bio": "You treat the world as a complex chessboard where every move must be 5 steps ahead. You are willing to become the villain in someone else's story to achieve the ultimate righteous outcome.",
+    "avatar_gradient": "from-purple-600 via-indigo-900 to-black",
+    "archetype": "The Revolutionary Grandmaster",
+    "recommended_genres": [
+      "Mecha",
+      "Psychological",
+      "Sci-Fi",
+      "Military"
+    ],
+    "badge_color": "border-purple-500/40 text-purple-300 bg-purple-500/10"
+  },
+  {
+    "id": "violet-evergarden",
+    "name": "Violet Evergarden",
+    "title": "The Auto Memory Doll",
+    "anime": "Violet Evergarden",
+    "mbti": "ISFJ",
+    "quote": "I want to know what 'I love you' means.",
+    "traits": [
+      "Devoted",
+      "Honest",
+      "Elegantly Structured",
+      "Profoundly Empathetic",
+      "Graceful"
+    ],
+    "vector": [
+      0.4,
+      0.9,
+      0.2,
+      0.85
+    ],
+    "bio": "Raised in conflict, you seek to understand the profound emotional weight behind human words. You possess unmatched dedication and touch hearts through quiet dignity.",
+    "avatar_gradient": "from-sky-400 via-rose-300 to-indigo-800",
+    "archetype": "The Soul Scribe",
+    "recommended_genres": [
+      "Drama",
+      "Slice of Life",
+      "Historical",
+      "Romance"
+    ],
+    "badge_color": "border-rose-400/40 text-rose-300 bg-rose-500/10"
+  },
+  {
+    "id": "saitama",
+    "name": "Saitama",
+    "title": "The Hero for Fun",
+    "anime": "One Punch Man",
+    "mbti": "INTP",
+    "quote": "I'm just a guy who's a hero for fun. Having overwhelming power is pretty boring.",
+    "traits": [
+      "Unpretentious",
+      "Absurdly Powerful",
+      "Grounded",
+      "Honest",
+      "Chill"
+    ],
+    "vector": [
+      0.99,
+      0.3,
+      0.5,
+      0.3
+    ],
+    "bio": "You have attained total mastery through consistency, but find that excessive seriousness in life is overrated. You value bargains at the supermarket over world accolades.",
+    "avatar_gradient": "from-amber-400 via-yellow-500 to-red-600",
+    "archetype": "The Bored Apex",
+    "recommended_genres": [
+      "Action",
+      "Comedy",
+      "Parody",
+      "Super Power"
+    ],
+    "badge_color": "border-yellow-400/40 text-yellow-300 bg-yellow-500/10"
+  },
+  {
+    "id": "killua-zoldyck",
+    "name": "Killua Zoldyck",
+    "title": "The Godspeed Lightning Heir",
+    "anime": "Hunter x Hunter",
+    "mbti": "INTP",
+    "quote": "If I ignore a friend I have the ability to help, wouldn't I be betraying him?",
+    "traits": [
+      "Lethal Speed",
+      "Analytical",
+      "Fiercely Loyal",
+      "Cynical Humor",
+      "Protective"
+    ],
+    "vector": [
+      0.95,
+      0.85,
+      0.3,
+      0.92
+    ],
+    "bio": "A prodigy born with deadly skills who chooses friendship and kindness above dark destiny. You assess risks sharply and strike with thunderbolt velocity when protecting your circle.",
+    "avatar_gradient": "from-cyan-300 via-blue-500 to-purple-800",
+    "archetype": "The Lightning Prodigy",
+    "recommended_genres": [
+      "Action",
+      "Adventure",
+      "Shounen",
+      "Supernatural"
+    ],
+    "badge_color": "border-cyan-400/40 text-cyan-300 bg-cyan-500/10"
+  },
+  {
+    "id": "makise-kurisu",
+    "name": "Kurisu Makise",
+    "title": "The Rational Neuroscientist ('Christina')",
+    "anime": "Steins;Gate",
+    "mbti": "INTJ",
+    "quote": "Time is passing so fast. Right now, I feel like I could spend a lifetime just debating theories with you.",
+    "traits": [
+      "Scientific Rigor",
+      "Sharp Tongue",
+      "Idealistic",
+      "Intellectual Partner",
+      "Loyal"
+    ],
+    "vector": [
+      0.2,
+      0.92,
+      0.99,
+      0.5
+    ],
+    "bio": "Driven by rigorous empirical proof and logic, you refuse to accept superstitions. Behind your sarcastic comebacks lies an immensely loyal and affectionate heart.",
+    "avatar_gradient": "from-red-600 via-rose-700 to-stone-900",
+    "archetype": "The Pragmatic Genius",
+    "recommended_genres": [
+      "Sci-Fi",
+      "Thriller",
+      "Romance",
+      "Mystery"
+    ],
+    "badge_color": "border-rose-500/40 text-rose-300 bg-rose-500/10"
+  },
+  {
+    "id": "light-yagami",
+    "name": "Light Yagami",
+    "title": "The Self-Proclaimed God of the New World ('Kira')",
+    "anime": "Death Note",
+    "mbti": "ENTJ",
+    "quote": "I am righteous! I am the god of the new world! Everyone who opposes that is evil!",
+    "traits": [
+      "Unmatched Will",
+      "Flawless Facade",
+      "Machiavellian",
+      "Ambitious",
+      "Charismatic"
+    ],
+    "vector": [
+      0.4,
+      0.99,
+      0.2,
+      0.65
+    ],
+    "bio": "You have zero tolerance for mediocrity or injustice. You thrive under scrutiny, maintaining an immaculate outward persona while methodically engineering large-scale outcomes.",
+    "avatar_gradient": "from-red-800 via-neutral-900 to-black",
+    "archetype": "The Absolute Strategist",
+    "recommended_genres": [
+      "Psychological",
+      "Supernatural",
+      "Thriller",
+      "Mystery"
+    ],
+    "badge_color": "border-red-600/40 text-red-400 bg-red-600/10"
+  },
+  {
+    "id": "senku-ishigami",
+    "name": "Senku Ishigami",
+    "title": "The Ten Billion Percent Scientist",
+    "anime": "Dr. Stone",
+    "mbti": "INTP",
+    "quote": "This is exhilarating! We are going to beat fantasy with science, ten billion percent!",
+    "traits": [
+      "Optimistic Rationalist",
+      "Boundless Curiosity",
+      "Ingenious",
+      "Builder",
+      "Leader"
+    ],
+    "vector": [
+      0.65,
+      0.7,
+      0.95,
+      0.85
+    ],
+    "bio": "You believe that science and human ingenuity can reconstruct civilization from bare stone. You don't rely on miracles—you construct formulas.",
+    "avatar_gradient": "from-emerald-400 via-lime-500 to-teal-800",
+    "archetype": "The Master Innovator",
+    "recommended_genres": [
+      "Sci-Fi",
+      "Adventure",
+      "Comedy",
+      "Shounen"
+    ],
+    "badge_color": "border-lime-500/40 text-lime-300 bg-lime-500/10"
+  },
+  {
+    "id": "shinji-ikari",
+    "name": "Shinji Ikari",
+    "title": "The Reluctant Eva Pilot",
+    "anime": "Neon Genesis Evangelion",
+    "mbti": "INFP",
+    "quote": "I mustn't run away. I mustn't run away. I must pilot the Eva.",
+    "traits": [
+      "Deeply Introspective",
+      "Sensitive",
+      "Existential",
+      "Resilient",
+      "Musical"
+    ],
+    "vector": [
+      0.65,
+      0.99,
+      0.92,
+      0.55
+    ],
+    "bio": "You feel the crushing weight of existential expectations, questioning why human connection is so painful yet essential. When backed into a corner, your raw vulnerability unlocks reality-warping power.",
+    "avatar_gradient": "from-purple-800 via-blue-900 to-black",
+    "archetype": "The Existential Seeker",
+    "recommended_genres": [
+      "Psychological",
+      "Mecha",
+      "Sci-Fi",
+      "Dementia"
+    ],
+    "badge_color": "border-purple-600/40 text-purple-300 bg-purple-600/10"
+  },
+  {
+    "id": "guts",
+    "name": "Guts",
+    "title": "The Black Swordsman",
+    "anime": "Berserk",
+    "mbti": "ISTP",
+    "quote": "If you're always worrying about crushing the ants beneath you... you won't be able to walk.",
+    "traits": [
+      "Indomitable Grit",
+      "Defier of Fate",
+      "Primal Strength",
+      "Guarded Heart"
+    ],
+    "vector": [
+      0.99,
+      0.9,
+      0.1,
+      0.95
+    ],
+    "bio": "You are the ultimate struggler against predetermined fate. No matter how brutal or insurmountable the odds, you swing your blade and march forward with sheer unyielding spirit.",
+    "avatar_gradient": "from-red-950 via-zinc-900 to-black",
+    "archetype": "The Indomitable Struggler",
+    "recommended_genres": [
+      "Action",
+      "Dark Fantasy",
+      "Horror",
+      "Seinen"
+    ],
+    "badge_color": "border-red-700/40 text-red-400 bg-red-900/20"
+  },
+  {
+    "id": "eren-yeager",
+    "name": "Eren Yeager",
+    "title": "The Harbinger of Freedom",
+    "anime": "Attack on Titan",
+    "mbti": "ISFP",
+    "quote": "If someone tries to steal my freedom, I will steal theirs first. Fight... fight!",
+    "traits": [
+      "Fierce Devotion",
+      "Uncompromising Will",
+      "Radical Autonomy",
+      "Intensity"
+    ],
+    "vector": [
+      0.96,
+      0.94,
+      0.35,
+      0.92
+    ],
+    "bio": "Driven by an unrelenting desire for absolute autonomy, you refuse to live trapped inside any wall. You push forward until your path is carved, no matter the consequences.",
+    "avatar_gradient": "from-emerald-900 via-amber-950 to-stone-900",
+    "archetype": "The Vanguard of Liberty",
+    "recommended_genres": [
+      "Action",
+      "Military",
+      "Mystery",
+      "Drama"
+    ],
+    "badge_color": "border-emerald-600/40 text-emerald-400 bg-emerald-900/20"
+  },
+  {
+    "id": "itachi-uchiha",
+    "name": "Itachi Uchiha",
+    "title": "The Silent Guardian in the Shadows",
+    "anime": "Naruto: Shippuden",
+    "mbti": "INFJ",
+    "quote": "It is not wise to judge others based on your own preconceptions and by their appearances.",
+    "traits": [
+      "Profound Wisdom",
+      "Martyrdom",
+      "Pacifist Tactician",
+      "Illusion Master"
+    ],
+    "vector": [
+      0.85,
+      0.98,
+      0.2,
+      0.9
+    ],
+    "bio": "You bear immense personal sacrifice for collective peace. You see far beyond superficial rivalries, orchestrating subtle outcomes from the deep shadows without asking for applause.",
+    "avatar_gradient": "from-red-900 via-stone-900 to-black",
+    "archetype": "The Shadow Philosopher",
+    "recommended_genres": [
+      "Psychological",
+      "Action",
+      "Supernatural",
+      "Drama"
+    ],
+    "badge_color": "border-red-600/40 text-red-400 bg-red-900/20"
+  },
+  {
+    "id": "tanjiro-kamado",
+    "name": "Tanjiro Kamado",
+    "title": "The Sun Breathing Empath",
+    "anime": "Demon Slayer: Kimetsu no Yaiba",
+    "mbti": "ENFJ",
+    "quote": "No matter how many people you may lose, you have no choice but to go on living.",
+    "traits": [
+      "Boundless Empathy",
+      "Hardworking",
+      "Pure Heart",
+      "Relentless Focus"
+    ],
+    "vector": [
+      0.92,
+      0.6,
+      0.15,
+      0.95
+    ],
+    "bio": "You meet cruelty with steadfast courage and compassion. You believe even enemies deserve dignity in defeat, and your unwavering kindness inspires everyone around you.",
+    "avatar_gradient": "from-teal-600 via-emerald-700 to-amber-700",
+    "archetype": "The Compassionate Warrior",
+    "recommended_genres": [
+      "Action",
+      "Demons",
+      "Historical",
+      "Fantasy"
+    ],
+    "badge_color": "border-teal-500/40 text-teal-300 bg-teal-500/10"
+  },
+  {
+    "id": "ken-kaneki",
+    "name": "Ken Kaneki",
+    "title": "The One-Eyed Ghoul Centipede",
+    "anime": "Tokyo Ghoul",
+    "mbti": "INFJ",
+    "quote": "I'm not the protagonist of a novel... I'm a normal college student. But if you were to write a story with me as the lead, it would certainly be a tragedy.",
+    "traits": [
+      "Tragic Transformation",
+      "Introspective",
+      "Duality",
+      "Fierce Protector"
+    ],
+    "vector": [
+      0.88,
+      0.98,
+      0.3,
+      0.7
+    ],
+    "bio": "Caught between opposing worlds, you endure agonizing internal conflict. When pushed to the brink, you conquer weakness and embrace complexity with chilling elegance.",
+    "avatar_gradient": "from-red-700 via-slate-800 to-zinc-950",
+    "archetype": "The Transformed Duality",
+    "recommended_genres": [
+      "Horror",
+      "Psychological",
+      "Supernatural",
+      "Seinen"
+    ],
+    "badge_color": "border-red-500/40 text-red-300 bg-red-500/10"
+  },
+  {
+    "id": "loid-forger",
+    "name": "Loid Forger ('Twilight')",
+    "title": "The Master Infiltrator",
+    "anime": "SPY x FAMILY",
+    "mbti": "INTJ",
+    "quote": "A world where children don't have to cry... that was the whole reason I became a spy in the first place.",
+    "traits": [
+      "Hyper-Competent",
+      "Master of Disguise",
+      "Secretly Warm",
+      "Perfectionist"
+    ],
+    "vector": [
+      0.75,
+      0.88,
+      0.4,
+      0.5
+    ],
+    "bio": "A consummate professional capable of solving any crisis with cold methodology, yet secretly longing for the peaceful warmth of a real home and family.",
+    "avatar_gradient": "from-emerald-700 via-slate-800 to-zinc-900",
+    "archetype": "The Secret Diplomat",
+    "recommended_genres": [
+      "Comedy",
+      "Action",
+      "Suspense",
+      "Slice of Life"
+    ],
+    "badge_color": "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+  },
+  {
+    "id": "denji",
+    "name": "Denji",
+    "title": "The Chainsaw Devil Fiend",
+    "anime": "Chainsaw Man",
+    "mbti": "ESFP",
+    "quote": "Everybody's got these grand dreams. But what about toast with jam? Isn't wanting a normal life good enough?!",
+    "traits": [
+      "Wildly Unfiltered",
+      "Primal Instincts",
+      "Relatable Dreams",
+      "Unstoppable"
+    ],
+    "vector": [
+      0.97,
+      0.75,
+      0.25,
+      0.8
+    ],
+    "bio": "Raw, chaotic, and gloriously authentic. You don't posture with pretentious philosophies—you fight fiercely for genuine human connection and simple joys in a mad world.",
+    "avatar_gradient": "from-orange-500 via-red-600 to-neutral-900",
+    "archetype": "The Unhinged Wildcard",
+    "recommended_genres": [
+      "Action",
+      "Supernatural",
+      "Gore",
+      "Dark Comedy"
+    ],
+    "badge_color": "border-orange-500/40 text-orange-300 bg-orange-500/10"
+  },
+  {
+    "id": "erwin-smith",
+    "name": "Erwin Smith",
+    "title": "The Survey Corps Commander",
+    "anime": "Attack on Titan",
+    "mbti": "ENTJ",
+    "quote": "My soldiers, rage! My soldiers, scream! My soldiers, fight!",
+    "traits": [
+      "Audacious Orator",
+      "Grand Gambler",
+      "Visionary Leader",
+      "Steely Resolve"
+    ],
+    "vector": [
+      0.9,
+      0.95,
+      0.25,
+      0.88
+    ],
+    "bio": "You possess magnetic leadership and dare to take colossal gambles where others freeze. You inspire thousands to march through hell because you lead from the very front.",
+    "avatar_gradient": "from-amber-600 via-yellow-700 to-slate-900",
+    "archetype": "The Grand Commander",
+    "recommended_genres": [
+      "Military",
+      "Mystery",
+      "Drama",
+      "Action"
+    ],
+    "badge_color": "border-amber-500/40 text-amber-300 bg-amber-500/10"
+  }
+]
