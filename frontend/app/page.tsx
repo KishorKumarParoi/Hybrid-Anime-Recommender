@@ -26,13 +26,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
-  Radio
+  Radio,
+  Award,
+  Calendar
 } from "lucide-react";
 import VectorGalaxy3D from "@/components/VectorGalaxy3D";
 import ColdStartSwiper from "@/components/ColdStartSwiper";
 import AgentFlowGraph from "@/components/AgentFlowGraph";
 import CharacterMatcher, { CharacterProfile } from "@/components/CharacterMatcher";
 import LiveNewsroom2027 from "@/components/LiveNewsroom2027";
+import UserWatchlistMAL, { WatchlistItem } from "@/components/UserWatchlistMAL";
+import TopAnimeLeaderboard from "@/components/TopAnimeLeaderboard";
+import SeasonalAnimeChart from "@/components/SeasonalAnimeChart";
+import AnimeDetailModal from "@/components/AnimeDetailModal";
 import {
   playClickSound,
   playSimdComputeSound,
@@ -129,9 +135,20 @@ export default function HomePage() {
   const [characters, setCharacters] = useState<CharacterProfile[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<
-    "catalog" | "character-persona" | "live-news" | "rust-engine" | "3d-galaxy" | "cold-start" | "langgraph-dossier" | "polyglot-mesh"
+    | "catalog"
+    | "watchlist"
+    | "leaderboard"
+    | "seasonal"
+    | "live-news"
+    | "character-persona"
+    | "rust-engine"
+    | "3d-galaxy"
+    | "cold-start"
+    | "langgraph-dossier"
+    | "polyglot-mesh"
   >("catalog");
   const [soundOn, setSoundOn] = useState(true);
+  const [selectedAnimeDetail, setSelectedAnimeDetail] = useState<any | null>(null);
 
   // Microservice health statuses
   const [serviceStatus, setServiceStatus] = useState({
@@ -416,6 +433,59 @@ export default function HomePage() {
     }
   };
 
+  const handleOpenAnimeDetail = (title: string) => {
+    playClickSound();
+    const found = catalogData.find((a) => a.title.toLowerCase() === title.toLowerCase()) || {
+      id: Math.floor(Math.random() * 90000) + 1000,
+      title,
+      genres: ["Action", "Sci-Fi", "Psychological"],
+      score: 9.0,
+      episodes: 24,
+      year: 2026,
+      synopsis: `An extraordinary anime narrative exploring deep conflicts and compelling character progression in "${title}".`,
+      studio: "Bones",
+      type: "TV",
+      status: "Finished Airing",
+      members: 650000,
+      ranked: 1,
+      popularity: 1
+    };
+    setSelectedAnimeDetail(found);
+  };
+
+  const handleAddAnimeToWatchlist = (
+    anime: any,
+    status: string = "Watching",
+    epsWatched: number = 0,
+    userScore: number = 9
+  ) => {
+    try {
+      const stored = localStorage.getItem("mal_user_watchlist_2027");
+      const list: WatchlistItem[] = stored ? JSON.parse(stored) : [];
+      const exists = list.some((i) => i.anime_id === anime.id);
+      if (!exists) {
+        const newItem: WatchlistItem = {
+          anime_id: anime.id,
+          title: anime.title,
+          genres: anime.genres || [],
+          score: anime.score || 8.5,
+          episodes: anime.episodes || 12,
+          user_episodes_watched: epsWatched,
+          user_score: userScore,
+          status: status as any,
+          studio: anime.studio || "Bones",
+          year: anime.year || 2020,
+          updated_at: new Date().toISOString().split("T")[0]
+        };
+        const updated = [newItem, ...list];
+        localStorage.setItem("mal_user_watchlist_2027", JSON.stringify(updated));
+        showToast(`Added "${anime.title}" to your MyAnimeList Watchlist!`);
+      } else {
+        showToast(`"${anime.title}" is already in your Watchlist!`);
+      }
+    } catch {}
+  };
+
   const handleRunExplicitRustSimd = async () => {
     setIsRustComputing(true);
     playSimdComputeSound();
@@ -669,6 +739,42 @@ export default function HomePage() {
         </button>
 
         <button
+          onClick={() => handleTabSwitch("watchlist")}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+            activeTab === "watchlist"
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Bookmark className="h-4 w-4 text-blue-400" />
+          <span>My Watchlist</span>
+        </button>
+
+        <button
+          onClick={() => handleTabSwitch("leaderboard")}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+            activeTab === "leaderboard"
+              ? "bg-amber-600 text-white shadow-lg shadow-amber-600/30 font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Award className="h-4 w-4 text-amber-400" />
+          <span>Top Rankings</span>
+        </button>
+
+        <button
+          onClick={() => handleTabSwitch("seasonal")}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+            activeTab === "seasonal"
+              ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Calendar className="h-4 w-4 text-emerald-400" />
+          <span>Seasonal Anime</span>
+        </button>
+
+        <button
           onClick={() => handleTabSwitch("catalog")}
           className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
             activeTab === "catalog"
@@ -868,7 +974,10 @@ export default function HomePage() {
               >
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-lg font-bold text-white group-hover:text-violet-300 transition-colors line-clamp-1">
+                    <h3
+                      onClick={() => handleOpenAnimeDetail(anime.title)}
+                      className="text-lg font-bold text-white group-hover:text-violet-300 transition-colors line-clamp-1 cursor-pointer"
+                    >
                       {anime.title}
                     </h3>
                     <div className="flex items-center space-x-1 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2 py-1 text-xs font-bold text-amber-300 flex-shrink-0">
@@ -988,6 +1097,37 @@ export default function HomePage() {
               setCatalogPage(1);
               handleTabSwitch("catalog");
             }}
+          />
+        </section>
+      )}
+
+      {/* Tab: MAL Watchlist */}
+      {activeTab === "watchlist" && (
+        <section className="space-y-6">
+          <UserWatchlistMAL
+            onSelectAnime={(title) => handleOpenAnimeDetail(title)}
+          />
+        </section>
+      )}
+
+      {/* Tab: MAL Top Leaderboard */}
+      {activeTab === "leaderboard" && (
+        <section className="space-y-6">
+          <TopAnimeLeaderboard
+            animeList={catalogData as any}
+            onSelectAnime={(title) => handleOpenAnimeDetail(title)}
+            onAddToList={(anime) => handleAddAnimeToWatchlist(anime)}
+          />
+        </section>
+      )}
+
+      {/* Tab: MAL Seasonal Chart */}
+      {activeTab === "seasonal" && (
+        <section className="space-y-6">
+          <SeasonalAnimeChart
+            animeList={catalogData as any}
+            onSelectAnime={(title) => handleOpenAnimeDetail(title)}
+            onAddToList={(anime) => handleAddAnimeToWatchlist(anime)}
           />
         </section>
       )}
@@ -1303,6 +1443,19 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Anime Detail & AI Spoiler-Free Companion Modal */}
+      {selectedAnimeDetail && (
+        <AnimeDetailModal
+          anime={selectedAnimeDetail}
+          onClose={() => setSelectedAnimeDetail(null)}
+          onAddToList={(a, st, ep, sc) => handleAddAnimeToWatchlist(a, st, ep, sc)}
+          onRunDossier={(title) => {
+            setSearchQuery(title);
+            handleTabSwitch("langgraph-dossier");
+          }}
+        />
       )}
     </div>
   );
