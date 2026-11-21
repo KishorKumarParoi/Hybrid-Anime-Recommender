@@ -25,12 +25,14 @@ import {
   UserCheck,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
+  Radio
 } from "lucide-react";
 import VectorGalaxy3D from "@/components/VectorGalaxy3D";
 import ColdStartSwiper from "@/components/ColdStartSwiper";
 import AgentFlowGraph from "@/components/AgentFlowGraph";
 import CharacterMatcher, { CharacterProfile } from "@/components/CharacterMatcher";
+import LiveNewsroom2027 from "@/components/LiveNewsroom2027";
 import {
   playClickSound,
   playSimdComputeSound,
@@ -127,7 +129,7 @@ export default function HomePage() {
   const [characters, setCharacters] = useState<CharacterProfile[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<
-    "catalog" | "rust-engine" | "3d-galaxy" | "cold-start" | "character-persona" | "langgraph-dossier" | "polyglot-mesh"
+    "catalog" | "character-persona" | "live-news" | "rust-engine" | "3d-galaxy" | "cold-start" | "langgraph-dossier" | "polyglot-mesh"
   >("catalog");
   const [soundOn, setSoundOn] = useState(true);
 
@@ -558,11 +560,11 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-            Next–Gen <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-pink-400 to-amber-300">Hybrid Anime</span> Intelligence Platform
+            MyAnimeList <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-pink-400 to-amber-300">2027 Edition</span> • AI Intelligence Platform
           </h1>
 
           <p className="text-base text-slate-300 leading-relaxed">
-            Enterprise recommendation architecture blending Go-powered JWT authentication, Rust SIMD vector similarity ranking, Express community interactions, Python LangGraph autonomous multi-agent intelligence, and deep anime character psychological profiling.
+            Redefining MyAnimeList for 2027: 24/7 autonomous Japanese studio intelligence stream powered by vLLM, sub-millisecond Rust SIMD vector re-ranking, cognitive character persona matching, and 1,250+ curated anime catalog.
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -601,7 +603,7 @@ export default function HomePage() {
         </div>
 
         {/* Microservices Real-Time Health Status Indicators */}
-        <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="flex flex-col rounded-xl border border-white/5 bg-slate-950/40 p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono text-slate-400">Go Auth (8081)</span>
@@ -637,11 +639,35 @@ export default function HomePage() {
             <span className="text-sm font-bold text-slate-100 mt-1 capitalize">{serviceStatus.pythonFastApi.status}</span>
             <span className="text-[11px] text-slate-400">LangGraph • Hybrid ML</span>
           </div>
+
+          <div className="flex flex-col rounded-xl border border-red-500/30 bg-slate-950/40 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono text-slate-400">vLLM GPU (8000)</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            </div>
+            <span className="text-sm font-bold text-slate-100 mt-1">Active</span>
+            <span className="text-[11px] text-slate-400">Qwen2.5 • 24/7 Wire</span>
+          </div>
         </div>
       </section>
 
       {/* Navigation Tabs */}
       <div className="flex items-center space-x-2 border-b border-white/10 pb-4 overflow-x-auto">
+        <button
+          onClick={() => handleTabSwitch("live-news")}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+            activeTab === "live-news"
+              ? "bg-red-600 text-white shadow-lg shadow-red-600/30 font-bold"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
+          }`}
+        >
+          <Radio className="h-4 w-4 text-red-400 animate-pulse" />
+          <span>24/7 AI Newsroom</span>
+          <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] bg-red-500/20 text-red-300 border border-red-500/30 font-mono font-bold">
+            LIVE
+          </span>
+        </button>
+
         <button
           onClick={() => handleTabSwitch("catalog")}
           className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
@@ -950,6 +976,19 @@ export default function HomePage() {
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
+        </section>
+      )}
+
+      {/* Tab: 24/7 Live AI Newsroom (MAL 2027) */}
+      {activeTab === "live-news" && (
+        <section className="space-y-6">
+          <LiveNewsroom2027
+            onSelectAnime={(title) => {
+              setCatalogSearch(title);
+              setCatalogPage(1);
+              handleTabSwitch("catalog");
+            }}
+          />
         </section>
       )}
 

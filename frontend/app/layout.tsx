@@ -1,11 +1,12 @@
 import './globals.css';
 import Navbar from '@/components/Navbar';
+import BreakingNewsTicker from '@/components/BreakingNewsTicker';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Anime.AI | Enterprise Hybrid Recommender & Polyglot Platform',
-  description: 'Production-ready recommendation engine powered by Go Auth, Express Interactions, Rust Scoring Engine, and Python LangGraph LLMOps.',
-  keywords: ['Anime Recommender', 'Next.js', 'Go', 'Rust', 'Express', 'FastAPI', 'PyTorch', 'Kafka', 'LangGraph'],
+  title: 'Anime.AI 2027 | The AI-Native MyAnimeList Evolution & Polyglot Platform',
+  description: 'Next-Gen anime intelligence platform featuring 24/7 live AI studio newsroom, Rust SIMD vector equalizer, character persona matching, and 1,250+ catalog.',
+  keywords: ['MyAnimeList 2027', 'Anime Recommender', 'Next.js 16', 'vLLM', 'Rust', 'Go', 'Express', 'LangGraph'],
 };
 
 export default function RootLayout({
@@ -16,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <BreakingNewsTicker />
         <Navbar />
         <main>{children}</main>
         <footer style={{

@@ -763,6 +763,30 @@ def api_catalog_search():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route("/api/news/live", methods=["GET"])
+def api_news_live():
+    """
+    24/7 Live AI Anime Newsroom endpoint.
+    Serves autonomous studio intelligence feeds, vLLM 3-bullet executive briefs,
+    and character commentary.
+    """
+    try:
+        news_file = os.path.join(os.path.dirname(__file__), "data", "anime_news_2027.json")
+        if os.path.exists(news_file):
+            with open(news_file, "r", encoding="utf-8") as f:
+                news_items = json.load(f)
+            return jsonify({
+                "status": "success",
+                "count": len(news_items),
+                "news": news_items,
+                "engine": "vLLM-Qwen2.5-AWQ-GPU",
+                "mode": "24/7 Live Autonomous Studio Scraping"
+            }), 200
+        return jsonify({"status": "error", "message": "Live newsroom data not found"}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)
