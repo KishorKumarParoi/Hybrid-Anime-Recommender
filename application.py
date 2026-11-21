@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import json
 import logging
@@ -61,6 +62,25 @@ except Exception as _e:
     logger.info(f"[i] Redis not connected ({_e}) - running in standalone memory mode")
 
 semantic_agent_cache = SemanticAgentCache(redis_client=redis_client, similarity_threshold=0.88)
+
+# ──────────────────────────────────────────────────────────────
+# GLOBAL ANIME CATALOG (17,367 REAL TITLES IN-MEMORY INDEX)
+# ──────────────────────────────────────────────────────────────
+GLOBAL_ANIME_CATALOG = []
+try:
+    catalog_full_path = os.path.join(os.path.dirname(__file__), "data", "anime_catalog_full.json")
+    if os.path.exists(catalog_full_path):
+        with open(catalog_full_path, "r", encoding="utf-8") as f:
+            GLOBAL_ANIME_CATALOG = json.load(f)
+        logger.info(f"[✓] Loaded {len(GLOBAL_ANIME_CATALOG)} anime titles into in-memory engine from anime_catalog_full.json")
+    else:
+        catalog_fallback = os.path.join(os.path.dirname(__file__), "data", "anime_1200.json")
+        if os.path.exists(catalog_fallback):
+            with open(catalog_fallback, "r", encoding="utf-8") as f:
+                GLOBAL_ANIME_CATALOG = json.load(f)
+            logger.info(f"[✓] Loaded fallback {len(GLOBAL_ANIME_CATALOG)} anime titles into memory")
+except Exception as _ce:
+    logger.error(f"[!] Could not preload global anime catalog: {_ce}")
 
 # ──────────────────────────────────────────────────────────────
 # PROMETHEUS METRICS DEFINITIONS
@@ -718,32 +738,164 @@ def api_character_match():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route("/api/character/match-struggle", methods=["POST"])
+def api_character_match_struggle():
+    """
+    Cognitive & Life Struggle Persona Matcher.
+    Analyzes freeform user text detailing personal struggle, life history,
+    fears, or core qualities, matching with the most resonant anime character.
+    """
+    try:
+        payload = request.get_json() or {}
+        user_text = payload.get("text", "").strip()
+        mbti_hint = payload.get("mbti", "").strip().upper()
+
+        if not user_text:
+            return jsonify({"status": "error", "message": "Text description required for struggle matching"}), 400
+
+        char_file = os.path.join(os.path.dirname(__file__), "data", "anime_characters.json")
+        if not os.path.exists(char_file):
+            return jsonify({"status": "error", "message": "Character data not initialized"}), 404
+
+        with open(char_file, "r", encoding="utf-8") as f:
+            characters = json.load(f)
+
+        STOPWORDS = {
+            'the', 'and', 'is', 'in', 'it', 'to', 'of', 'for', 'with', 'on', 'at', 'by', 
+            'from', 'this', 'that', 'they', 'them', 'their', 'you', 'your', 'was', 'were', 
+            'have', 'has', 'had', 'are', 'but', 'not', 'what', 'who', 'how', 'when', 'where', 
+            'why', 'can', 'will', 'just', 'all', 'into', 'out', 'up', 'down', 'about', 'more', 
+            'some', 'any', 'my', 'me', 'we', 'our', 'us', 'he', 'him', 'his', 'she', 'her', 
+            'been', 'being', 'would', 'could', 'should', 'so', 'than', 'then', 'too', 'very',
+            'myself', 'yourself', 'ourselves', 'feeling', 'feel', 'really', 'much', 'like'
+        }
+
+        def stem_root(w):
+            for suffix in ['ing', 'tion', 'ed', 'ies', 'es', 's', 'ment', 'ness', 'ly']:
+                if w.endswith(suffix) and len(w) > len(suffix) + 2:
+                    return w[:-len(suffix)]
+            return w
+
+        user_words = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', user_text.lower()) if w not in STOPWORDS]
+        user_roots = {stem_root(w) for w in user_words}
+
+        scores = []
+        for ch in characters:
+            target_words = [w for w in re.findall(r'\b[a-zA-Z]{3,}\b', (ch.get('struggle', '') + ' ' + ' '.join(ch.get('struggle_keywords', [])) + ' ' + ' '.join(ch.get('traits', [])) + ' ' + ch.get('bio', '')).lower()) if w not in STOPWORDS]
+            target_roots = {stem_root(w) for w in target_words}
+            
+            common = user_roots.intersection(target_roots)
+            
+            kw_hits = 0
+            matched_kws = []
+            for kw in ch.get('struggle_keywords', []):
+                if any(stem_root(p) in user_roots for p in re.findall(r'\b[a-zA-Z]{3,}\b', kw.lower()) if p not in STOPWORDS):
+                    kw_hits += 2.8
+                    matched_kws.append(kw)
+            
+            raw_score = (len(common) * 2.2) + (kw_hits * 1.6)
+            if mbti_hint and ch.get("mbti") == mbti_hint:
+                raw_score += 5.0
+
+            match_pct = round(min(99.4, max(58.0, 62.0 + (raw_score * 1.9))), 1)
+            scores.append({
+                "character": ch,
+                "score": raw_score,
+                "match_percentage": match_pct,
+                "common_roots": list(common),
+                "matched_keywords": matched_kws[:4]
+            })
+
+        scores.sort(key=lambda x: x["score"], reverse=True)
+        top = scores[0] if scores else None
+        if not top:
+            return jsonify({"status": "error", "message": "No match found"}), 404
+
+        top_char = top["character"]
+        
+        # Build emotional resonance explanation
+        kws_str = ", ".join(f"'{k}'" for k in top["matched_keywords"]) if top["matched_keywords"] else "shared psychological endurance"
+        resonance_analysis = (
+            f"Your personal testimony mirrors {top_char['name']}'s life trajectory with {top['match_percentage']}% resonance. "
+            f"Like {top_char['name']}, your narrative reveals deep themes of {kws_str}. "
+            f"Rather than merely enduring pain, your journey embodies the tension between extreme inner vulnerability and an outward duty to stand firm. "
+            f"{top_char['name']}'s canonical trials in '{top_char['anime']}' reflect this exact emotional weight."
+        )
+
+        return jsonify({
+            "status": "success",
+            "matched_character": top_char,
+            "match_percentage": top["match_percentage"],
+            "shared_struggles": top["matched_keywords"] if top["matched_keywords"] else top_char.get("struggle_keywords", [])[:3],
+            "resonance_analysis": resonance_analysis,
+            "struggle": top_char.get("struggle", ""),
+            "healing_philosophy": top_char.get("healing_philosophy", ""),
+            "cathartic_anime": top_char.get("cathartic_anime", []),
+            "all_matches": [
+                {
+                    "id": s["character"]["id"],
+                    "name": s["character"]["name"],
+                    "anime": s["character"]["anime"],
+                    "title": s["character"]["title"],
+                    "mbti": s["character"]["mbti"],
+                    "match_percentage": s["match_percentage"]
+                }
+                for s in scores[:5]
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route("/api/catalog/search", methods=["GET"])
 def api_catalog_search():
     """
-    Search and paginate across the 1,200+ real anime dataset.
-    Query params: q, genre, page (1-based), limit (default 24).
+    Search and paginate across the 17,367+ complete anime dataset.
+    Query params: q, genre, min_score, sort, page (1-based), limit (default 24).
     """
     try:
         q = request.args.get("q", "").strip().lower()
         genre = request.args.get("genre", "").strip().lower()
+        min_score = float(request.args.get("min_score", 0.0))
+        sort_by = request.args.get("sort", "score").strip().lower()
         page = max(1, int(request.args.get("page", 1)))
         limit = max(1, min(100, int(request.args.get("limit", 24))))
 
-        catalog_file = os.path.join(os.path.dirname(__file__), "data", "anime_1200.json")
-        if not os.path.exists(catalog_file):
-            return jsonify({"status": "error", "message": "Catalog data not found"}), 404
-
-        with open(catalog_file, "r", encoding="utf-8") as f:
-            catalog = json.load(f)
+        catalog = GLOBAL_ANIME_CATALOG
+        if not catalog:
+            catalog_file = os.path.join(os.path.dirname(__file__), "data", "anime_catalog_full.json")
+            if not os.path.exists(catalog_file):
+                catalog_file = os.path.join(os.path.dirname(__file__), "data", "anime_1200.json")
+            if os.path.exists(catalog_file):
+                with open(catalog_file, "r", encoding="utf-8") as f:
+                    catalog = json.load(f)
 
         filtered = []
         for a in catalog:
-            if q and q not in a["title"].lower() and not any(q in g.lower() for g in a["genres"]):
+            if min_score > 0 and float(a.get("score", 0.0)) < min_score:
                 continue
-            if genre and not any(genre in g.lower() for g in a["genres"]):
-                continue
+            if q:
+                title_match = q in a.get("title", "").lower()
+                synopsis_match = q in a.get("synopsis", "").lower()
+                genre_match = any(q in g.lower() for g in a.get("genres", []))
+                studio_match = q in a.get("studio", "").lower()
+                if not (title_match or synopsis_match or genre_match or studio_match):
+                    continue
+            if genre and genre != "all":
+                if not any(genre in g.lower() for g in a.get("genres", [])):
+                    continue
             filtered.append(a)
+
+        # Sorting
+        if sort_by == "members":
+            filtered.sort(key=lambda x: x.get("members", 0), reverse=True)
+        elif sort_by == "year":
+            filtered.sort(key=lambda x: x.get("year", 0), reverse=True)
+        elif sort_by == "ranked":
+            filtered.sort(key=lambda x: x.get("ranked", 999999))
+        else: # score
+            filtered.sort(key=lambda x: x.get("score", 0.0), reverse=True)
 
         total = len(filtered)
         start = (page - 1) * limit
@@ -753,9 +905,10 @@ def api_catalog_search():
         return jsonify({
             "status": "success",
             "total": total,
+            "total_catalog_size": len(catalog),
             "page": page,
             "limit": limit,
-            "total_pages": (total + limit - 1) // limit,
+            "total_pages": (total + limit - 1) // limit if total > 0 else 1,
             "anime": paginated
         }), 200
 

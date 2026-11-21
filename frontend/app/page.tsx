@@ -146,7 +146,7 @@ export default function HomePage() {
     | "cold-start"
     | "langgraph-dossier"
     | "polyglot-mesh"
-  >("catalog");
+  >("character-persona");
   const [soundOn, setSoundOn] = useState(true);
   const [selectedAnimeDetail, setSelectedAnimeDetail] = useState<any | null>(null);
 
@@ -634,7 +634,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-base text-slate-300 leading-relaxed">
-            Redefining MyAnimeList for 2027: 24/7 autonomous Japanese studio intelligence stream powered by vLLM, sub-millisecond Rust SIMD vector re-ranking, cognitive character persona matching, and 1,250+ curated anime catalog.
+            Redefining MyAnimeList for 2027: 24/7 autonomous Japanese studio intelligence stream powered by vLLM, sub-millisecond Rust SIMD vector re-ranking, AI struggle & character biography matching, and 17,367+ complete anime catalog.
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -783,7 +783,7 @@ export default function HomePage() {
           }`}
         >
           <Layers className="h-4 w-4" />
-          <span>Anime Catalog ({catalogData.length.toLocaleString()})</span>
+          <span>Full Catalog (17,367+ Anime)</span>
         </button>
 
         <button
@@ -864,16 +864,16 @@ export default function HomePage() {
         </button>
       </div>
 
-      {/* Tab 1: 1,250+ Anime Catalog with Search, Filters & Pagination */}
+      {/* Tab 1: 17,367+ Complete Anime Catalog with Search, Filters & Pagination */}
       {activeTab === "catalog" && (
         <section className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-white tracking-tight">
-                Enterprise Hybrid Catalog ({catalogData.length.toLocaleString()} Titles)
+                Complete Anime Database (17,367+ Indexed Titles)
               </h2>
               <p className="text-sm text-slate-400">
-                Real-time collaborative filtering & vector semantics loaded from raw dataset
+                Full MyAnimeList metadata with in-memory Rust SIMD collaborative filtering & latent vectors
               </p>
             </div>
 
@@ -895,7 +895,7 @@ export default function HomePage() {
                 <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search 1,250+ anime by title, genres, keywords..."
+                  placeholder="Search across 17,367+ anime titles, genres, synopsis, or studios..."
                   value={catalogSearch}
                   onChange={(e) => {
                     setCatalogSearch(e.target.value);
